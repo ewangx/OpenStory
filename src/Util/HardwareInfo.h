@@ -19,8 +19,10 @@
 
 #include "../Configuration.h"
 
+#ifdef _WIN32
 #include <Windows.h>
 #include <IPHlpApi.h>
+#endif
 
 namespace ms
 {
@@ -29,6 +31,7 @@ namespace ms
 	public:
 		HardwareInfo()
 		{
+#ifdef _WIN32
 			size_t size = 18;
 
 			// Hard Drive VolumeSerialNumber
@@ -119,6 +122,13 @@ namespace ms
 			free(volumeSerialNumber);
 			free(hwid);
 			free(macs);
+#else
+			char hwid[] = "000000000000";
+			char volume[] = "00000000";
+			char macs[] = "00-00-00-00-00-00";
+			Configuration::get().set_hwid(hwid, volume);
+			Configuration::get().set_macs(macs);
+#endif
 		}
 	};
 }

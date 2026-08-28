@@ -26,16 +26,20 @@
 #include "../Constants.h"
 #include "../Timer.h"
 
+#include <algorithm>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#ifdef _WIN32
 #include <Windows.h>
 #include <ShlObj.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
-#include <glfw3native.h>
+#include <GLFW/glfw3native.h>
+#endif
 
 #include <chrono>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <iomanip>
@@ -122,6 +126,21 @@ namespace ms
 	// s_vp_y_top is the top offset in screen coords (GLFW uses top-left origin)
 	static int s_vp_x = 0, s_vp_y_top = 0, s_vp_w = 1920, s_vp_h = 1080;
 
+	void window_size_callback(GLFWwindow*, int width, int height)
+	{
+		if (width > 0 && height > 0)
+		{
+			s_vp_w = width;
+			s_vp_h = height;
+		}
+	}
+
+	void framebuffer_size_callback(GLFWwindow*, int width, int height)
+	{
+		if (width > 0 && height > 0)
+			glViewport(0, 0, width, height);
+	}
+
 	void cursor_callback(GLFWwindow*, double xpos, double ypos)
 	{
 		// Map screen coordinates to game logical coordinates
@@ -137,6 +156,7 @@ namespace ms
 
 	void clip_cursor_to_window(GLFWwindow* window)
 	{
+#ifdef _WIN32
 		HWND hwnd = glfwGetWin32Window(window);
 		if (hwnd)
 		{
@@ -149,14 +169,19 @@ namespace ms
 			RECT screen_rect = { tl.x, tl.y, br.x, br.y };
 			ClipCursor(&screen_rect);
 		}
+#else
+		(void)window;
+#endif
 	}
 
 	void focus_callback(GLFWwindow* window, int focused)
 	{
 		if (focused)
 			clip_cursor_to_window(window);
+#ifdef _WIN32
 		else
 			ClipCursor(nullptr);
+#endif
 
 		UI::get().send_focus(focused);
 	}
@@ -185,7 +210,11 @@ namespace ms
 		glfwMakeContextCurrent(context);
 		glfwSetErrorCallback(error_callback);
 		glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
+	#ifdef __APPLE__
+		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+	#else
 		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	#endif
 
 		if (Error error = GraphicsGL::get().init())
 			return error;
@@ -215,6 +244,19 @@ namespace ms
 		else
 		{
 			glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+
+	#ifdef __APPLE__
+			int work_x, work_y, work_width, work_height;
+			glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &work_x, &work_y, &work_width, &work_height);
+
+			const double scale = std::min(
+				1.0,
+				std::min(
+					work_width * 0.9 / wnd_width,
+					work_height * 0.9 / wnd_height));
+			wnd_width = static_cast<int>(wnd_width * scale);
+			wnd_height = static_cast<int>(wnd_height * scale);
+	#endif
 		}
 
 		glwnd = glfwCreateWindow(
@@ -230,11 +272,29 @@ namespace ms
 
 		if (fullscreen)
 			glfwSetWindowPos(glwnd, 0, 0);
+	#ifdef __APPLE__
+		else
+		{
+			int work_x, work_y, work_width, work_height;
+			glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &work_x, &work_y, &work_width, &work_height);
+			glfwSetWindowAspectRatio(glwnd, 16, 9);
+			glfwSetWindowSizeLimits(glwnd, 800, 450, GLFW_DONT_CARE, GLFW_DONT_CARE);
+			glfwSetWindowPos(
+				glwnd,
+				work_x + (work_width - wnd_width) / 2,
+				work_y + (work_height - wnd_height) / 2);
+		}
+	#endif
 
 		glfwMakeContextCurrent(glwnd);
 
 		bool vsync = Setting<VSync>::get().load();
 		glfwSwapInterval(vsync ? 1 : 0);
+
+		int window_width, window_height;
+		glfwGetWindowSize(glwnd, &window_width, &window_height);
+		s_vp_w = window_width;
+		s_vp_h = window_height;
 
 		int fb_width, fb_height;
 		glfwGetFramebufferSize(glwnd, &fb_width, &fb_height);
@@ -242,8 +302,6 @@ namespace ms
 		// Stretch to fill entire screen — no black bars
 		s_vp_x = 0;
 		s_vp_y_top = 0;
-		s_vp_w = fb_width;
-		s_vp_h = fb_height;
 		glViewport(0, 0, fb_width, fb_height);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -260,6 +318,8 @@ namespace ms
 		glfwSetCharCallback(glwnd, char_callback);
 		glfwSetMouseButtonCallback(glwnd, mousekey_callback);
 		glfwSetCursorPosCallback(glwnd, cursor_callback);
+		glfwSetWindowSizeCallback(glwnd, window_size_callback);
+		glfwSetFramebufferSizeCallback(glwnd, framebuffer_size_callback);
 		glfwSetWindowFocusCallback(glwnd, focus_callback);
 		glfwSetScrollCallback(glwnd, scroll_callback);
 		glfwSetWindowCloseCallback(glwnd, close_callback);
@@ -270,13 +330,11 @@ namespace ms
 		// Apply saved mouse speed (SystemParametersInfo SPI_SETMOUSESPEED).
 		apply_mouse_speed();
 
-		char buf[256];
-		GetCurrentDirectoryA(256, buf);
-		strcat_s(buf, sizeof(buf), "\\Icon.png");
+		auto icon_path = std::filesystem::current_path() / "Icon.png";
 
 		GLFWimage images[1];
 
-		auto stbi = stbi_load(buf, &images[0].width, &images[0].height, 0, 4);
+		auto stbi = stbi_load(icon_path.string().c_str(), &images[0].width, &images[0].height, 0, 4);
 
 		if (stbi != NULL){
 				// return Error(Error::Code::MISSING_ICON, stbi_failure_reason());
@@ -376,6 +434,7 @@ namespace ms
 
 	void Window::apply_mouse_speed(int slider_value)
 	{
+#ifdef _WIN32
 		// Slider stored 0..100. Windows SPI_SETMOUSESPEED takes 1..20 (10 = default).
 		if (slider_value < 0)
 			slider_value = Setting<MouseSpeed>::get().load();
@@ -390,6 +449,9 @@ namespace ms
 
 		SystemParametersInfoA(SPI_SETMOUSESPEED, 0,
 			reinterpret_cast<PVOID>(static_cast<INT_PTR>(sys_speed)), 0);
+#else
+		(void)slider_value;
+#endif
 	}
 
 	void Window::take_screenshot()
@@ -431,7 +493,11 @@ namespace ms
 		auto now = std::chrono::system_clock::now();
 		std::time_t t = std::chrono::system_clock::to_time_t(now);
 		std::tm tm_local;
+#ifdef _WIN32
 		localtime_s(&tm_local, &t);
+#else
+		localtime_r(&t, &tm_local);
+#endif
 
 		std::ostringstream name;
 		name << "maple_"

@@ -261,7 +261,7 @@ namespace ms
 	// IP Address which the client will connect to
 	struct ServerIP : public Configuration::StringEntry
 	{
-		ServerIP() : StringEntry("ServerIP", "72.60.176.12") {}
+		ServerIP() : StringEntry("ServerIP", "127.0.0.1") {}
 	};
 
 	// Port which the client will connect to

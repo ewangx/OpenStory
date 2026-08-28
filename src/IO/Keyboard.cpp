@@ -20,7 +20,7 @@
 #ifdef PLATFORM_IOS
 #include "KeyCodes.h"
 #else
-#include <glfw3.h>
+#include <GLFW/glfw3.h>
 #endif
 
 namespace ms

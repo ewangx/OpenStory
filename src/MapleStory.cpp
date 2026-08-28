@@ -16,6 +16,8 @@
 //	along with this program.  If not, see <https://www.gnu.org/licenses/>.		//
 //////////////////////////////////////////////////////////////////////////////////
 #include <iostream>
+#include <cstdlib>
+#include <filesystem>
 #include <thread>
 
 #include "Constants.h"
@@ -216,6 +218,17 @@ namespace ms
 
 int main()
 {
+	if (const char* asset_dir = std::getenv("OPENSTORY_ASSET_DIR"))
+	{
+		std::error_code error;
+		std::filesystem::current_path(asset_dir, error);
+		if (error)
+		{
+			std::cerr << "[Error] Cannot use asset directory: " << asset_dir << std::endl;
+			return 1;
+		}
+	}
+
 	ms::install_crash_logger();
 	ms::HardwareInfo();
 	ms::ScreenResolution();

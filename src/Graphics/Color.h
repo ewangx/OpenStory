@@ -25,7 +25,7 @@
 	#endif
 #else
 	#define GLEW_STATIC
-	#include <glew.h>
+	#include <GL/glew.h>
 #endif
 
 #include <array>

@@ -61,6 +61,42 @@ cmake --build build --config Debug --target OpenStory
 
 Place v83 NX files in the `wz/` directory.
 
+### macOS
+
+The initial macOS build uses a null audio backend. Install the native dependencies and build the app bundle:
+
+```bash
+brew install freetype glfw glew asio
+cmake -S . -B build/macos \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
+  -DOPENSTORY_AUDIO=OFF
+cmake --build build/macos --parallel
+```
+
+Launch from a logged-in Terminal session and point the client at the validated NX directory:
+
+```bash
+open -n \
+  --env OPENSTORY_ASSET_DIR=/absolute/path/to/nx \
+  wz/OpenStory.app
+```
+
+The environment variable changes the process working directory before settings, networking, or assets are initialized. This avoids copying the NX set into the app bundle. Audio remains intentionally disabled until a portable backend is added.
+
+To run against a sibling Cosmic checkout, start the local server before launching the client:
+
+```bash
+docker compose -f ../Cosmic/docker-compose.yml up --build -d
+docker compose -f ../Cosmic/docker-compose.yml logs -f maplestory
+```
+
+Cosmic is ready when its log says `Cosmic is now online`. The client defaults to `127.0.0.1:8484`; Cosmic exposes channels on ports `7575` through `7577`. Stop the stack with:
+
+```bash
+docker compose -f ../Cosmic/docker-compose.yml down
+```
+
 Fonts are compiled in via the generated `src/Graphics/EmbeddedFonts.{h,cpp}`, which are
 committed — no extra build step.
 

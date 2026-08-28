@@ -19,8 +19,12 @@
 
 #include "../Configuration.h"
 
+#ifdef _WIN32
 #include <windef.h>
 #include <WinUser.h>
+#elif defined(__APPLE__)
+#include <CoreGraphics/CGDirectDisplay.h>
+#endif
 
 namespace ms
 {
@@ -29,6 +33,7 @@ namespace ms
 	public:
 		ScreenResolution()
 		{
+#ifdef _WIN32
 			RECT desktop;
 
 			// Get a handle to the desktop window
@@ -40,6 +45,11 @@ namespace ms
 			// The top left corner will have coordinates (0, 0) and the bottom right corner will have coordinates (horizontal, vertical)
 			Configuration::get().set_max_width(desktop.right);
 			Configuration::get().set_max_height(desktop.bottom);
+#elif defined(__APPLE__)
+			CGDirectDisplayID display = CGMainDisplayID();
+			Configuration::get().set_max_width(static_cast<int16_t>(CGDisplayPixelsWide(display)));
+			Configuration::get().set_max_height(static_cast<int16_t>(CGDisplayPixelsHigh(display)));
+#endif
 		}
 	};
 }

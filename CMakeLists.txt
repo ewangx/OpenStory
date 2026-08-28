@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.14)
-project(OpenStory)
+project(OpenStory VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(APPLE)
+    option(OPENSTORY_AUDIO "Enable BASS audio" OFF)
+else()
+    option(OPENSTORY_AUDIO "Enable BASS audio" ON)
+endif()
 
 file(GLOB_RECURSE SOURCE_FILES
             "src/*.h"
@@ -9,6 +16,12 @@ file(GLOB_RECURSE SOURCE_FILES
             "src/*/*.cpp"
             "src/*/*.h"
     )
+
+if(OPENSTORY_AUDIO)
+    list(REMOVE_ITEM SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/Audio/AudioNull.cpp")
+else()
+    list(REMOVE_ITEM SOURCE_FILES "${CMAKE_SOURCE_DIR}/src/Audio/Audio.cpp")
+endif()
 # Embed the Windows app/window icon (Explorer exe icon + GLFW window icon).
 if(WIN32)
     list(APPEND SOURCE_FILES "${CMAKE_SOURCE_DIR}/resource/OpenStory.rc")
@@ -17,6 +30,7 @@ endif(WIN32)
 add_executable(OpenStory ${SOURCE_FILES})
 
 set_target_properties(OpenStory PROPERTIES
+                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/wz
                       RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/wz
                       RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/wz
 )
@@ -36,7 +50,7 @@ endif()
 
 find_package(OpenGL REQUIRED)
 TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${OPENGL_INCLUDE_DIRS})
-target_link_libraries(OpenStory ${OPENGL_LIBRARIES})
+target_link_libraries(OpenStory PRIVATE ${OPENGL_LIBRARIES})
 
 
 if(WIN32)
@@ -44,9 +58,9 @@ if(WIN32)
     TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx)
     TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/stb)
     TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/freetype/include)
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/glew-2.1.0/include/GL)
+    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/glew-2.1.0/include)
     TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/bass24/c)
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/glfw-3.3.2.bin.WIN32/include/GLFW)
+    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${CMAKE_SOURCE_DIR}/vendor/glfw-3.3.2.bin.WIN32/include)
 
     # Build NoLifeNx (and lz4) from source instead of the stale prebuilt
     # NoLifeNx.lib, so fixes to the bitmap/node code take effect on a normal
@@ -61,43 +75,50 @@ if(WIN32)
         ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/nx.cpp
         ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/includes/lz4_v1_8_2_win64/lz4.c)
 
-    target_link_libraries(OpenStory ${CMAKE_SOURCE_DIR}/vendor/freetype/win64/freetype.lib)
-    target_link_libraries(OpenStory ${CMAKE_SOURCE_DIR}/vendor/bass24/c/x64/bass.lib)
-    target_link_libraries(OpenStory ${CMAKE_SOURCE_DIR}/vendor/glew-2.1.0/lib/Release/x64/glew32s.lib)
-    target_link_libraries(OpenStory ${CMAKE_SOURCE_DIR}/vendor/glfw-3.3.2.bin.WIN64/lib-vc2019/glfw3.lib)
-    target_link_libraries(OpenStory Iphlpapi.lib)
+    target_link_libraries(OpenStory PRIVATE ${CMAKE_SOURCE_DIR}/vendor/freetype/win64/freetype.lib)
+    target_link_libraries(OpenStory PRIVATE ${CMAKE_SOURCE_DIR}/vendor/bass24/c/x64/bass.lib)
+    target_link_libraries(OpenStory PRIVATE ${CMAKE_SOURCE_DIR}/vendor/glew-2.1.0/lib/Release/x64/glew32s.lib)
+    target_link_libraries(OpenStory PRIVATE ${CMAKE_SOURCE_DIR}/vendor/glfw-3.3.2.bin.WIN64/lib-vc2019/glfw3.lib)
+    target_link_libraries(OpenStory PRIVATE Iphlpapi.lib)
 endif(WIN32)
 
+if(APPLE)
+    set_target_properties(OpenStory PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER com.openstory.client
+        MACOSX_BUNDLE_BUNDLE_NAME OpenStory
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION})
 
-if(UNIX)
-    target_link_libraries(OpenStory ${PROJECT_SOURCE_DIR}/libs/NoLifeNx/nlnx/build/libNoLifeNx.a)
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${PROJECT_SOURCE_DIR}/libs/NoLifeNx)
-    target_link_libraries(OpenStory ${PROJECT_SOURCE_DIR}/libs/lz4/lib/liblz4.a)
+    find_package(Freetype REQUIRED)
+    find_package(GLEW REQUIRED)
+    find_package(glfw3 CONFIG REQUIRED)
+    find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
+    find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
 
-    INCLUDE(FindFreetype)
-    IF(NOT FREETYPE_FOUND)
-        FIND_LIBRARY(FREETYPE_LIBRARIES NAMES libfreetype freetype.dll PATHS "./libs/MacOS" "./libs/Windows" DOC "Freetype library")
-        FIND_PATH(FREETYPE_INCLUDE_DIRS ftbuild.h "./includes" DOC "Freetype includes")
-    ENDIF(NOT FREETYPE_FOUND)
-    INCLUDE_DIRECTORIES(${FREETYPE_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(OpenStory ${FREETYPE_LIBRARIES})
+    add_library(NoLifeNx STATIC
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/audio.cpp
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/bitmap.cpp
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/file.cpp
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/node.cpp
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/nx.cpp
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/includes/lz4_v1_8_2_win64/lz4.c)
+    target_include_directories(NoLifeNx PUBLIC
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx/nlnx/includes/lz4_v1_8_2_win64/include)
 
-    TARGET_LINK_LIBRARIES(OpenStory ${PROJECT_SOURCE_DIR}/libs/glad/build/libglad.a)
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${PROJECT_SOURCE_DIR}/libs/glad/build/include)
+    target_compile_definitions(OpenStory PRIVATE PLATFORM_MACOS=1 USE_ASIO=1)
+    target_include_directories(OpenStory PRIVATE
+        ${CMAKE_SOURCE_DIR}/vendor/stb
+        ${ASIO_INCLUDE_DIR})
+    target_link_libraries(OpenStory PRIVATE
+        NoLifeNx
+        Freetype::Freetype
+        GLEW::GLEW
+        glfw
+        ${COREGRAPHICS_FRAMEWORK})
 
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${PROJECT_SOURCE_DIR}/libs/glfw/include)
-    TARGET_LINK_LIBRARIES(OpenStory ${PROJECT_SOURCE_DIR}/libs/glfw/build/src/libglfw3.a)
-
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${PROJECT_SOURCE_DIR}/libs/openal-soft/include)
-    TARGET_LINK_LIBRARIES(OpenStory ${PROJECT_SOURCE_DIR}/libs/openal-soft/build/libopenal.so)
-
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${PROJECT_SOURCE_DIR}/libs/alure/include)
-    TARGET_LINK_LIBRARIES(OpenStory ${PROJECT_SOURCE_DIR}/libs/alure/build/libalure2.so)
-
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${PROJECT_SOURCE_DIR}/libs/stb)
-
-    TARGET_INCLUDE_DIRECTORIES(OpenStory PUBLIC ${PROJECT_SOURCE_DIR}/libs/asio/asio/include)
-    target_link_libraries(OpenStory X11)
-    target_link_libraries(OpenStory dl)
-    target_link_libraries(OpenStory pthread)
-endif(UNIX)
+    add_custom_command(TARGET OpenStory POST_BUILD
+        COMMAND /usr/bin/codesign --force --deep --sign - $<TARGET_BUNDLE_DIR:OpenStory>
+        COMMENT "Ad-hoc signing OpenStory.app")
+endif()
