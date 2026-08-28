@@ -87,18 +87,25 @@ namespace ms
 			return false;
 		}
 
-		result = recv(sock, (char*)buffer, 32, 0);
+		size_t received = 0;
 
-		if (result == HANDSHAKE_LEN)
+		while (received < HANDSHAKE_LEN)
 		{
-			return true;
-		}
-		else
-		{
-			WSACleanup();
+			result = recv(sock, reinterpret_cast<char*>(buffer + received), static_cast<int>(HANDSHAKE_LEN - received), 0);
 
-			return false;
+			if (result <= 0)
+			{
+				closesocket(sock);
+				sock = INVALID_SOCKET;
+				WSACleanup();
+
+				return false;
+			}
+
+			received += static_cast<size_t>(result);
 		}
+
+		return true;
 	}
 
 	bool SocketWinsock::close()
@@ -112,7 +119,19 @@ namespace ms
 
 	bool SocketWinsock::dispatch(const int8_t* bytes, size_t length) const
 	{
-		return send(sock, (char*)bytes, static_cast<int>(length), 0) != SOCKET_ERROR;
+		size_t sent = 0;
+
+		while (sent < length)
+		{
+			const int result = send(sock, reinterpret_cast<const char*>(bytes + sent), static_cast<int>(length - sent), 0);
+
+			if (result <= 0)
+				return false;
+
+			sent += static_cast<size_t>(result);
+		}
+
+		return true;
 	}
 
 	size_t SocketWinsock::receive(bool* success)
@@ -122,21 +141,28 @@ namespace ms
 
 		FD_SET(sock, &sockset);
 
-		int result = select(0, &sockset, 0, 0, &timeout);
+		const int ready = select(0, &sockset, 0, 0, &timeout);
 
-		if (result > 0)
-			result = recv(sock, (char*)buffer, MAX_PACKET_LENGTH, 0);
+		if (ready == 0)
+			return 0;
 
-		if (result == SOCKET_ERROR)
+		if (ready == SOCKET_ERROR)
 		{
 			*success = false;
 
 			return 0;
 		}
-		else
+
+		const int result = recv(sock, reinterpret_cast<char*>(buffer), MAX_PACKET_LENGTH, 0);
+
+		if (result <= 0)
 		{
-			return result;
+			*success = false;
+
+			return 0;
 		}
+
+		return static_cast<size_t>(result);
 	}
 
 	const int8_t* SocketWinsock::get_buffer() const

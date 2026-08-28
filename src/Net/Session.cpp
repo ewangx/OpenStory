@@ -19,13 +19,13 @@
 
 #include "../Configuration.h"
 
+#include <iostream>
+
 namespace ms
 {
 	Session::Session()
 	{
 		connected = false;
-		length = 0;
-		pos = 0;
 	}
 
 	Session::~Session()
@@ -36,6 +36,8 @@ namespace ms
 
 	bool Session::init(const char* host, const char* port)
 	{
+		framer.reset();
+
 		// Connect to the server
 		connected = socket.open(host, port);
 
@@ -72,56 +74,28 @@ namespace ms
 
 	void Session::process(const int8_t* bytes, size_t available)
 	{
-		if (pos == 0)
-		{
-			// Position is zero, meaning this is the start of a new packet. Start by determining length.
-			length = cryptography.check_length(bytes);
-			// Reading the length means we processed the header. Move forward by the header length.
-			bytes = bytes + HEADER_LENGTH;
-			available -= HEADER_LENGTH;
-		}
-
-		// Determine how much we can write. Write data into the buffer.
-		size_t towrite = length - pos;
-
-		if (towrite > available)
-			towrite = available;
-
-		memcpy(buffer + pos, bytes, towrite);
-		pos += towrite;
-
-		// Check if the current packet has been fully processed
-		if (pos >= length)
-		{
-			cryptography.decrypt(buffer, length);
-
-			try
+		framer.process(bytes, available,
+			[this](const int8_t* header)
 			{
-				packetswitch.forward(buffer, length);
-			}
-			catch (const PacketError&)
+				return cryptography.check_length(header);
+			},
+			[this](int8_t* packet, size_t packet_length)
 			{
-			}
-			catch (const std::exception&)
-			{
-				// A handler hit an unexpected error (e.g. std::out_of_range
-				// from an unguarded container access). Swallow it so one bad
-				// packet degrades gracefully instead of terminating the
-				// whole client.
-			}
+				cryptography.decrypt(packet, packet_length);
 
-			pos = 0;
-			length = 0;
-
-			// Check if there is more available
-			size_t remaining = available - towrite;
-
-			if (remaining >= MIN_PACKET_LENGTH)
-			{
-				// More packets are available, so we start over.
-				process(bytes + towrite, remaining);
-			}
-		}
+				try
+				{
+					packetswitch.forward(packet, packet_length);
+				}
+				catch (const PacketError& error)
+				{
+					std::cerr << "[Packet] " << error.what() << std::endl;
+				}
+				catch (const std::exception& error)
+				{
+					std::cerr << "[Packet] Handler failed: " << error.what() << std::endl;
+				}
+			});
 	}
 
 	void Session::write(int8_t* packet_bytes, size_t packet_length)
@@ -133,20 +107,36 @@ namespace ms
 		cryptography.create_header(header, packet_length);
 		cryptography.encrypt(packet_bytes, packet_length);
 
-		socket.dispatch(header, HEADER_LENGTH);
-		socket.dispatch(packet_bytes, packet_length);
+		if (!socket.dispatch(header, HEADER_LENGTH) || !socket.dispatch(packet_bytes, packet_length))
+		{
+			std::cerr << "[Packet] Send failed; closing connection" << std::endl;
+			connected = false;
+			framer.reset();
+			socket.close();
+		}
 	}
 
 	void Session::read()
 	{
-		// Check if a packet has arrived. Handle if data is sufficient: 4 bytes (header) + 2 bytes (opcode) = 6 bytes.
+		// Preserve every received byte; TCP may split a packet at any boundary.
 		size_t result = socket.receive(&connected);
 
-		if (result >= MIN_PACKET_LENGTH || length > 0)
+		if (result > 0)
 		{
 			// Retrieve buffer from the socket and process it
 			const int8_t* bytes = socket.get_buffer();
-			process(bytes, result);
+
+			try
+			{
+				process(bytes, result);
+			}
+			catch (const PacketError& error)
+			{
+				std::cerr << "[Packet] Closing connection: " << error.what() << std::endl;
+				connected = false;
+				framer.reset();
+				socket.close();
+			}
 		}
 	}
 

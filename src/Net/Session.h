@@ -18,6 +18,7 @@
 #pragma once
 
 #include "Cryptography.h"
+#include "PacketFramer.h"
 #include "PacketSwitch.h"
 
 #include "../Error.h"
@@ -59,9 +60,7 @@ namespace ms
 		Cryptography cryptography;
 		PacketSwitch packetswitch;
 
-		int8_t buffer[MAX_PACKET_LENGTH];
-		size_t length;
-		size_t pos;
+		PacketFramer framer;
 		bool connected;
 
 #ifdef USE_ASIO

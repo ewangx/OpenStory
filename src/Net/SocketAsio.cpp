@@ -39,11 +39,15 @@ namespace ms
 
 		if (!error)
 		{
-			size_t result = socket.read_some(asio::buffer(buffer), error);
-			return !error && (result == HANDSHAKE_LEN);
+			size_t result = asio::read(socket, asio::buffer(buffer, HANDSHAKE_LEN), error);
+
+			if (!error && result == HANDSHAKE_LEN)
+				return true;
+
+			socket.close(error);
 		}
 
-		return !error;
+		return false;
 	}
 
 	bool SocketAsio::close()

@@ -24,7 +24,9 @@
 		#define GL_BGRA GL_BGRA_EXT
 	#endif
 #else
-	#define GLEW_STATIC
+	#ifndef GLEW_STATIC
+		#define GLEW_STATIC
+	#endif
 	#include <GL/glew.h>
 #endif
 

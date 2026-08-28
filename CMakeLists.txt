@@ -1,13 +1,31 @@
 cmake_minimum_required(VERSION 3.14)
 project(OpenStory VERSION 0.1.0)
 
+include(CTest)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "Minimum supported macOS version" FORCE)
+endif()
+
 if(APPLE)
     option(OPENSTORY_AUDIO "Enable BASS audio" OFF)
+    option(OPENSTORY_FETCH_MACOS_DEPS "Build pinned macOS dependencies from source" ON)
 else()
     option(OPENSTORY_AUDIO "Enable BASS audio" ON)
+endif()
+
+if(BUILD_TESTING)
+    add_executable(OpenStoryNetTests
+        tests/NetTests.cpp
+        src/Net/Cryptography.cpp
+        src/Net/InPacket.cpp)
+    target_include_directories(OpenStoryNetTests PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx)
+    add_test(NAME OpenStoryNetTests COMMAND OpenStoryNetTests)
 endif()
 
 file(GLOB_RECURSE SOURCE_FILES
@@ -83,17 +101,75 @@ if(WIN32)
 endif(WIN32)
 
 if(APPLE)
+    set(OPENSTORY_ICON ${CMAKE_CURRENT_BINARY_DIR}/OpenStory.icns)
+    add_custom_command(
+        OUTPUT ${OPENSTORY_ICON}
+        COMMAND /usr/bin/sips -s format icns ${CMAKE_SOURCE_DIR}/resource/Icon.ico --out ${OPENSTORY_ICON}
+        DEPENDS ${CMAKE_SOURCE_DIR}/resource/Icon.ico
+        VERBATIM)
+    set_source_files_properties(${OPENSTORY_ICON} PROPERTIES
+        GENERATED TRUE
+        MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(OpenStory PRIVATE ${OPENSTORY_ICON})
+
     set_target_properties(OpenStory PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER com.openstory.client
         MACOSX_BUNDLE_BUNDLE_NAME OpenStory
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION})
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+        MACOSX_BUNDLE_ICON_FILE OpenStory.icns)
 
-    find_package(Freetype REQUIRED)
-    find_package(GLEW REQUIRED)
-    find_package(glfw3 CONFIG REQUIRED)
-    find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
+    if(OPENSTORY_FETCH_MACOS_DEPS)
+        include(FetchContent)
+
+        set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static dependencies" FORCE)
+        set(FT_DISABLE_ZLIB ON CACHE BOOL "Use FreeType's built-in zlib" FORCE)
+        set(FT_DISABLE_BZIP2 ON CACHE BOOL "Disable FreeType bzip2 support" FORCE)
+        set(FT_DISABLE_PNG ON CACHE BOOL "Disable FreeType PNG support" FORCE)
+        set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "Disable FreeType HarfBuzz support" FORCE)
+        set(FT_DISABLE_BROTLI ON CACHE BOOL "Disable FreeType Brotli support" FORCE)
+        set(SKIP_INSTALL_ALL ON CACHE BOOL "Skip dependency install targets" FORCE)
+        set(glew-cmake_BUILD_SHARED OFF CACHE BOOL "Disable shared GLEW" FORCE)
+        set(glew-cmake_BUILD_STATIC ON CACHE BOOL "Build static GLEW" FORCE)
+        set(ONLY_LIBS ON CACHE BOOL "Build only GLEW libraries" FORCE)
+        set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Disable GLFW examples" FORCE)
+        set(GLFW_BUILD_TESTS OFF CACHE BOOL "Disable GLFW tests" FORCE)
+        set(GLFW_BUILD_DOCS OFF CACHE BOOL "Disable GLFW docs" FORCE)
+        set(GLFW_INSTALL OFF CACHE BOOL "Disable GLFW install targets" FORCE)
+
+        FetchContent_Declare(freetype
+            GIT_REPOSITORY https://github.com/freetype/freetype.git
+            GIT_TAG 42608f77f20749dd6ddc9e0536788eaad70ea4b5)
+        FetchContent_Declare(glew
+            GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
+            GIT_TAG f456deace7b408655109aaeff71421ef2d3858c6)
+        FetchContent_Declare(glfw
+            GIT_REPOSITORY https://github.com/glfw/glfw.git
+            GIT_TAG 7b6aead9fb88b3623e3b3725ebb42670cbe4c579)
+        FetchContent_Declare(asio
+            GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+            GIT_TAG 12e0ce9e0500bf0f247dbd1ae894272656456079)
+        FetchContent_MakeAvailable(freetype glew glfw asio)
+
+        # AGL was removed from modern macOS SDKs and GLEW does not use it when
+        # built as a library.
+        set_property(TARGET libglew_static PROPERTY INTERFACE_LINK_LIBRARIES OpenGL::GL)
+
+        set(OPENSTORY_FREETYPE_TARGET freetype)
+        set(OPENSTORY_GLEW_TARGET libglew_static)
+        set(ASIO_INCLUDE_DIR ${asio_SOURCE_DIR}/asio/include)
+    else()
+        find_package(Freetype REQUIRED)
+        find_package(GLEW REQUIRED)
+        find_package(glfw3 CONFIG REQUIRED)
+        find_path(ASIO_INCLUDE_DIR asio.hpp REQUIRED)
+
+        set(OPENSTORY_FREETYPE_TARGET Freetype::Freetype)
+        set(OPENSTORY_GLEW_TARGET GLEW::GLEW)
+    endif()
+
     find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
 
     add_library(NoLifeNx STATIC
@@ -113,12 +189,15 @@ if(APPLE)
         ${ASIO_INCLUDE_DIR})
     target_link_libraries(OpenStory PRIVATE
         NoLifeNx
-        Freetype::Freetype
-        GLEW::GLEW
+        ${OPENSTORY_FREETYPE_TARGET}
+        ${OPENSTORY_GLEW_TARGET}
         glfw
         ${COREGRAPHICS_FRAMEWORK})
 
     add_custom_command(TARGET OpenStory POST_BUILD
-        COMMAND /usr/bin/codesign --force --deep --sign - $<TARGET_BUNDLE_DIR:OpenStory>
-        COMMENT "Ad-hoc signing OpenStory.app")
+        COMMAND ${CMAKE_COMMAND}
+            -DAPP_BUNDLE=$<TARGET_BUNDLE_DIR:OpenStory>
+            -P ${CMAKE_SOURCE_DIR}/cmake/FixupMacOSBundle.cmake
+        COMMENT "Embedding dependencies and ad-hoc signing OpenStory.app"
+        VERBATIM)
 endif()

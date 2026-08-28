@@ -33,7 +33,7 @@ namespace ms
 
 	size_t InPacket::length() const
 	{
-		return top - pos;
+		return pos <= top ? top - pos : 0;
 	}
 
 	void InPacket::skip(size_t count)
@@ -79,16 +79,25 @@ namespace ms
 
 	std::string InPacket::read_string()
 	{
-		uint16_t length = read<uint16_t>();
+		const uint16_t count = inspect<uint16_t>();
 
-		return read_padded_string(length);
+		if (count > length() - sizeof(uint16_t))
+			throw PacketError("Stack underflow at " + std::to_string(pos));
+
+		skip(sizeof(uint16_t));
+
+		return read_padded_string(count);
 	}
 
 	std::string InPacket::read_padded_string(uint16_t count)
 	{
-		std::string ret;
+		if (count > length())
+			throw PacketError("Stack underflow at " + std::to_string(pos));
 
-		for (int16_t i = 0; i < count; i++)
+		std::string ret;
+		ret.reserve(count);
+
+		for (size_t i = 0; i < count; i++)
 		{
 			char letter = read_byte();
 

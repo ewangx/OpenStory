@@ -12,6 +12,7 @@
 *.cmake
 !CMakeLists.ios.cmake
 !ios.toolchain.cmake
+!cmake/FixupMacOSBundle.cmake
 CMakeCache.txt
 
 *.nx
