@@ -25,6 +25,7 @@
 #include "MapleMap/MapDrops.h"
 #include "MapleMap/MapMists.h"
 #include "MapleMap/MapEffect.h"
+#include "DirectionScene.h"
 #include "MapleMap/MapWeather.h"
 #include "MapleMap/MapNpcs.h"
 #include "MapleMap/MapPortals.h"
@@ -101,6 +102,10 @@ namespace ms
 
 		// Set a map effect
 		void add_effect(std::string path);
+		// Execute the field-change command from a direction scene.
+		void play_direction_scene(const std::string& path);
+		void draw_direction_scene(float alpha) const;
+		bool is_direction_scene_active() const;
 
 		// Weather
 		void set_weather(const std::string& path, const std::string& message);
@@ -182,6 +187,7 @@ namespace ms
 		MapEffect effect;
 		MapPointEffects point_effects;
 		MapWeather weather;
+		DirectionScene direction_scene;
 
 		Combat combat;
 

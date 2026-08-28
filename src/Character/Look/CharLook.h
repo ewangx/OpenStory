@@ -55,6 +55,7 @@ namespace ms
 		void set_stance_forced(Stance::Id stance);
 		void set_expression(Expression::Id expression);
 		void set_action(const std::string& action);
+		void restart_action(const std::string& action);
 		void set_direction(bool mirrored);
 		void set_alerted(int64_t millis);
 		bool get_alerted() const;

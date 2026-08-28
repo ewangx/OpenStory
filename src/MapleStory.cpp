@@ -96,8 +96,13 @@ namespace ms
 	void draw(float alpha)
 	{
 		Window::get().begin();
+		GraphicsGL::get().set_direction_viewport(Stage::get().is_direction_scene_active());
 		Stage::get().draw(alpha);
-		UI::get().draw(alpha);
+
+		if (!Stage::get().is_direction_scene_active())
+			UI::get().draw(alpha);
+
+		Stage::get().draw_direction_scene(alpha);
 
 		// On-screen FPS counter (top-right, yellow).
 		if (Configuration::get().get_show_fps())

@@ -53,6 +53,8 @@ namespace ms
 		Error init();
 		// Re-initialize after changing screen modes
 		void reinit();
+		// Render the frame through the legacy 800x600 cinematic viewport.
+		void set_direction_viewport(bool active);
 
 		// Clear all bitmaps if most of the space is used up
 		void clear();
@@ -307,6 +309,8 @@ namespace ms
 
 		int16_t VWIDTH;
 		int16_t VHEIGHT;
+		bool direction_viewport = false;
+		GLint framebuffer_viewport[4] = { 0, 0, 0, 0 };
 		Rectangle<int16_t> SCREEN;
 
 		static const GLshort ATLASW = 8192;

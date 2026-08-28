@@ -94,6 +94,7 @@ namespace ms
 		mists.clear();
 		point_effects.clear();
 		reactors.clear();
+		direction_scene.clear(player);
 	}
 
 	void Stage::load_map(int32_t mapid)
@@ -230,6 +231,11 @@ namespace ms
 		effect.update();
 		weather.update();
 		tilesobjs.update();
+
+		direction_scene.update(player);
+
+		if (int32_t field = direction_scene.take_pending_field(); field >= 0)
+			ChangeMapPacket(false, field, "", false).dispatch();
 
 		reactors.update(physics);
 		npcs.update(physics);
@@ -488,6 +494,21 @@ namespace ms
 	void Stage::add_effect(std::string path)
 	{
 		effect = MapEffect(path);
+	}
+
+	void Stage::play_direction_scene(const std::string& path)
+	{
+		direction_scene.load(path, player);
+	}
+
+	void Stage::draw_direction_scene(float alpha) const
+	{
+		direction_scene.draw(alpha);
+	}
+
+	bool Stage::is_direction_scene_active() const
+	{
+		return direction_scene.is_active();
 	}
 
 	void Stage::set_weather(const std::string& path, const std::string& message)

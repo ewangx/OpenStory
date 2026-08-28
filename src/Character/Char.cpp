@@ -38,6 +38,7 @@ namespace ms
 	void Char::draw(double viewx, double viewy, float alpha) const
 	{
 		Point<int16_t> absp = phobj.get_absolute(viewx, viewy, alpha) + sit_offset;
+		const CharLook& drawlook = direction_look_active ? direction_look : look;
 
 		effects.drawbelow(absp, alpha);
 
@@ -68,9 +69,9 @@ namespace ms
 		if (state == State::DIED)
 			draw_death(absp, alpha);
 		else if (mount.is_active())
-			look.draw(DrawArgument(absp + mount.seat_offset(mount_gait()), color), alpha);
+			drawlook.draw(DrawArgument(absp + mount.seat_offset(mount_gait()), color), alpha);
 		else
-			look.draw(DrawArgument(absp, color), alpha);
+			drawlook.draw(DrawArgument(absp, color), alpha);
 
 		if (const auto* box = MiniRooms::get().find(get_oid()))
 		{
@@ -218,6 +219,9 @@ namespace ms
 		// its attack-swing sound plays attenuated by distance (other players
 		// attacking across the map are quiet / silent).
 		look.set_sound_position(get_position());
+
+		if (direction_look_active)
+			direction_look.update(Constants::TIMESTEP);
 
 		return look.update(stancespeed);
 	}
@@ -583,6 +587,32 @@ namespace ms
 	const CharLook& Char::get_look() const
 	{
 		return look;
+	}
+
+	void Char::begin_direction_look(const std::vector<int32_t>& equips)
+	{
+		direction_look = look;
+
+		for (int32_t itemid : equips)
+			direction_look.add_equip(itemid);
+
+		direction_look_active = true;
+	}
+
+	void Char::play_direction_action(const std::string& action)
+	{
+		if (!direction_look_active)
+		{
+			direction_look = look;
+			direction_look_active = true;
+		}
+
+		direction_look.restart_action(action);
+	}
+
+	void Char::end_direction_look()
+	{
+		direction_look_active = false;
 	}
 
 	PhysicsObject& Char::get_phobj()

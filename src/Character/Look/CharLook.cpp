@@ -676,6 +676,13 @@ namespace ms
 		}
 	}
 
+	void CharLook::restart_action(const std::string& acstr)
+	{
+		action = nullptr;
+		actionstr.clear();
+		set_action(acstr);
+	}
+
 	void CharLook::set_direction(bool f)
 	{
 		flip = f;

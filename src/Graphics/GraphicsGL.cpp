@@ -676,6 +676,8 @@ namespace ms
 
 	void GraphicsGL::reinit()
 	{
+		glGetIntegerv(GL_VIEWPORT, framebuffer_viewport);
+
 		int32_t new_width = Constants::Constants::get().get_viewwidth();
 		int32_t new_height = Constants::Constants::get().get_viewheight();
 
@@ -705,6 +707,11 @@ namespace ms
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		clearinternal();
+	}
+
+	void GraphicsGL::set_direction_viewport(bool active)
+	{
+		direction_viewport = active;
 	}
 
 	void GraphicsGL::clearinternal()
@@ -1501,6 +1508,21 @@ namespace ms
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		if (direction_viewport)
+		{
+			int32_t width = std::min(framebuffer_viewport[2], framebuffer_viewport[3] * 4 / 3);
+			int32_t height = std::min(framebuffer_viewport[3], framebuffer_viewport[2] * 3 / 4);
+			int32_t x = framebuffer_viewport[0] + (framebuffer_viewport[2] - width) / 2;
+			int32_t y = framebuffer_viewport[1] + (framebuffer_viewport[3] - height) / 2;
+			glViewport(x, y, width, height);
+			glUniform2f(uniform_screensize, 800.0f, 600.0f);
+		}
+		else
+		{
+			glViewport(framebuffer_viewport[0], framebuffer_viewport[1], framebuffer_viewport[2], framebuffer_viewport[3]);
+			glUniform2f(uniform_screensize, VWIDTH, VHEIGHT);
+		}
 
 		GLsizeiptr csize = quads.size() * sizeof(Quad);
 		GLsizeiptr fsize = quads.size() * Quad::LENGTH;

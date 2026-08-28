@@ -38,6 +38,8 @@
 #include "../Gameplay/MapleMap/MapObject.h"
 #include "../IO/Components/ChatBalloon.h"
 
+#include <vector>
+
 namespace ms
 {
 	// Base for characters, e.g. the player and other clients on the same map.
@@ -190,6 +192,9 @@ namespace ms
 		CharLook& get_look();
 		// Obtain a constant reference to this character's look
 		const CharLook& get_look() const;
+		void begin_direction_look(const std::vector<int32_t>& equips);
+		void play_direction_action(const std::string& action);
+		void end_direction_look();
 		// Return a reference to this characters's physics
 		PhysicsObject& get_phobj();
 
@@ -206,6 +211,8 @@ namespace ms
 
 		CharLook look;
 		CharLook look_preview;
+		CharLook direction_look;
+		bool direction_look_active = false;
 		MountLook mount;
 
 		MountLook::Gait mount_gait() const
