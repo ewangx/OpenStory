@@ -21,7 +21,10 @@
 #include "../MapleTVBroadcast.h"
 #include "../../Character/QuestLog.h"
 #include "../../Graphics/Text.h"
+#include "../../IO/UI.h"
+#include "../../IO/UITypes/UIQuestLog.h"
 #include "../../Net/NpcResponseTracker.h"
+#include "../../Net/Packets/QuestPackets.h"
 #include "../../Constants.h"
 
 #ifdef USE_NX
@@ -441,6 +444,49 @@ namespace ms
 			).contains(cursorpos);
 	}
 
+	bool Npc::send_quest_interaction() const
+	{
+		if (quest_interaction == QuestInteraction::START)
+		{
+			if (quest_interaction_scripted)
+			{
+				NpcResponseTracker::get().mark_clicked_now();
+				NpcResponseTracker::get().mark_pending(npcid);
+				ScriptedStartQuestPacket(quest_interaction_id, npcid).dispatch();
+			}
+			else
+			{
+				auto questlog = UI::get().get_element<UIQuestLog>();
+				if (!questlog || !questlog->is_active())
+					questlog = UI::get().emplace<UIQuestLog>(Stage::get().get_player().get_quests());
+				if (questlog)
+					questlog->focus_available_quest(quest_interaction_id);
+			}
+			return true;
+		}
+
+		if (quest_interaction == QuestInteraction::END)
+		{
+			if (quest_interaction_scripted)
+			{
+				NpcResponseTracker::get().mark_clicked_now();
+				NpcResponseTracker::get().mark_pending(npcid);
+				ScriptedEndQuestPacket(quest_interaction_id, npcid).dispatch();
+			}
+			else
+			{
+				auto questlog = UI::get().get_element<UIQuestLog>();
+				if (!questlog || !questlog->is_active())
+					questlog = UI::get().emplace<UIQuestLog>(Stage::get().get_player().get_quests());
+				if (questlog)
+					questlog->focus_active_quest(quest_interaction_id);
+			}
+			return true;
+		}
+
+		return false;
+	}
+
 	std::string Npc::get_name()
 	{
 		return name;
@@ -459,6 +505,9 @@ namespace ms
 	void Npc::update_quest_mark()
 	{
 		quest_mark_type = QuestMarkType::NONE;
+		quest_interaction = QuestInteraction::NONE;
+		quest_interaction_id = 0;
+		quest_interaction_scripted = false;
 
 		// If a previous TalkToNPC attempt timed out (server had no handler /
 		// the quest data is missing from this server), never show an
@@ -468,6 +517,7 @@ namespace ms
 
 		const Player& player = Stage::get().get_player();
 		const QuestLog& quests = const_cast<Player&>(player).get_quests();
+		const Inventory& inventory = player.get_inventory();
 		int16_t player_level = static_cast<int16_t>(player.get_stats().get_stat(MapleStat::Id::LEVEL));
 		int16_t player_job = static_cast<int16_t>(player.get_stats().get_stat(MapleStat::Id::JOB));
 
@@ -506,6 +556,10 @@ namespace ms
 
 			if (is_end_npc)
 			{
+				quest_interaction = QuestInteraction::END;
+				quest_interaction_id = qid;
+				quest_interaction_scripted = is_truthy(end_check["endscript"]);
+
 				// Collect required counts from end_check.
 				std::vector<int32_t> required;
 				required.reserve(8);
@@ -622,6 +676,20 @@ namespace ms
 			if (lvmax > 0 && player_level > lvmax)
 				continue;
 
+			bool items_available = true;
+			for (auto item : start_check["item"])
+			{
+				int32_t itemid = static_cast<int32_t>(safe_int(item["id"]));
+				int32_t count = static_cast<int32_t>(safe_int(item["count"]));
+				if (itemid > 0 && count > 0 && inventory.get_total_item_count(itemid) < count)
+				{
+					items_available = false;
+					break;
+				}
+			}
+			if (!items_available)
+				continue;
+
 			// Skip quests that are way below player level (only when a
 			// real lvmin is declared — lvmin <= 0 means "no level gate"
 			// and would otherwise filter out every quest for any
@@ -688,6 +756,9 @@ namespace ms
 			// Player qualifies — show available mark
 			quest_mark_type = QuestMarkType::AVAILABLE;
 			quest_mark_anim = mark_available;
+			quest_interaction = QuestInteraction::START;
+			quest_interaction_id = qid;
+			quest_interaction_scripted = is_truthy(start_check["startscript"]);
 			return;
 		}
 	}

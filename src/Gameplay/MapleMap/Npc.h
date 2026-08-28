@@ -72,6 +72,8 @@ namespace ms
 		void set_scripted(bool s);
 		// Check if the NPC is in range of the cursor
 		bool inrange(Point<int16_t> cursorpos, Point<int16_t> viewpos) const;
+		// Dispatch the quest represented by this NPC's current quest marker.
+		bool send_quest_interaction() const;
 
 		// Returns the NPC name
 		std::string get_name();
@@ -118,6 +120,10 @@ namespace ms
 		// Quest mark above NPC
 		QuestMarkType quest_mark_type;
 		mutable Animation quest_mark_anim;
+		enum class QuestInteraction : uint8_t { NONE, START, END };
+		QuestInteraction quest_interaction = QuestInteraction::NONE;
+		int16_t quest_interaction_id = 0;
+		bool quest_interaction_scripted = false;
 
 		// Shared quest mark animations from MapHelper.img/quest (v83)
 		static bool marks_initialized;

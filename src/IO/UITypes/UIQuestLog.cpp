@@ -906,6 +906,49 @@ namespace ms
 		}
 	}
 
+	void UIQuestLog::focus_available_quest(int16_t qid)
+	{
+		load_quests();
+		change_tab(Buttons::TAB0);
+
+		for (size_t i = 0; i < recommended_entries.size(); i++)
+		{
+			if (recommended_entries[i].id == qid)
+			{
+				show_recommended = true;
+				selected_entry = static_cast<int16_t>(i);
+				select_quest(static_cast<int16_t>(i), true);
+				return;
+			}
+		}
+
+		for (size_t i = 0; i < available_entries.size(); i++)
+		{
+			if (available_entries[i].id == qid)
+			{
+				selected_entry = static_cast<int16_t>(
+					(show_recommended ? recommended_entries.size() : 0) + i);
+				select_quest(static_cast<int16_t>(i), false);
+				return;
+			}
+		}
+	}
+
+	void UIQuestLog::focus_active_quest(int16_t qid)
+	{
+		load_quests();
+		change_tab(Buttons::TAB1);
+
+		for (size_t i = 0; i < active_entries.size(); i++)
+		{
+			if (active_entries[i].id == qid)
+			{
+				select_quest(static_cast<int16_t>(i));
+				return;
+			}
+		}
+	}
+
 	// Whether all item-count and mob-kill requirements on the end-check
 	// side of a started quest are satisfied. Mirrors the logic in
 	// UIQuestHelper::refresh_quest_info but skips the end-NPC talk

@@ -129,9 +129,12 @@ namespace ms
 					if (!NpcResponseTracker::get().can_click_now())
 						return Cursor::State::IDLE;
 
-					NpcResponseTracker::get().mark_clicked_now();
-					NpcResponseTracker::get().mark_pending(npc->get_npcid());
-					TalkToNPCPacket(npc->get_oid()).dispatch();
+					if (!npc->send_quest_interaction())
+					{
+						NpcResponseTracker::get().mark_clicked_now();
+						NpcResponseTracker::get().mark_pending(npc->get_npcid());
+						TalkToNPCPacket(npc->get_oid()).dispatch();
+					}
 
 					return Cursor::State::IDLE;
 				}
