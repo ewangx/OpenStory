@@ -45,7 +45,7 @@ namespace nl
 			return *files.back();
 		}
 
-		node base, character, effect, etc, item, map, mapPretty, mapLatest, map001, mob, morph, npc, quest, reactor, skill, sound, string, tamingmob, ui;
+		node base, character, effect, etc, item, map, mapPretty, mapLatest, map001, mob, morph, npc, quest, reactor, skill, sound, string, tamingmob, ui, uiV83;
 
 		void load_all()
 		{
@@ -70,6 +70,7 @@ namespace nl
 				string = add_file("String.nx");
 				tamingmob = add_file("TamingMob.nx");
 				ui = add_file("UI.nx");
+				uiV83 = add_file("UI.v83.nx");
 			}
 			else if (exists("Data.nx"))
 			{
@@ -89,6 +90,7 @@ namespace nl
 				string = base["String"];
 				tamingmob = base["TamingMob"];
 				ui = base["UI"];
+				uiV83 = add_file("UI.v83.nx");
 			}
 			else
 			{

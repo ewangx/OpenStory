@@ -84,6 +84,8 @@ open -n \
 
 The environment variable changes the process working directory before settings, networking, or assets are initialized. This avoids copying the NX set into the app bundle. Audio remains intentionally disabled until a portable backend is added.
 
+When the primary `UI.nx` comes from a newer MapleStory version, place a Cosmic-v83 UI archive at `UI.v83.nx`. OpenStory uses this optional overlay for legacy login screens that are absent from newer UI data, while all other UI nodes continue to come from `UI.nx`.
+
 To run against a sibling Cosmic checkout, start the local server before launching the client:
 
 ```bash

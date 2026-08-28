@@ -58,7 +58,6 @@ namespace ms
 		version = Text(Text::Font::A11B, Text::Alignment::LEFT, Color::Name::LEMONGRASS, "Ver. " + version_text);
 
 		nl::node Login = nl::nx::ui["Login.img"];
-		nl::node Common = Login["Common"];
 		nl::node CustomizeChar = Login["CustomizeChar"]["000"];
 		nl::node back = nl::nx::map["Back"]["login.img"]["back"];
 		nl::node signboard = nl::nx::mapLatest["Obj"]["login.img"]["NewChar"]["signboard"];
@@ -66,21 +65,9 @@ namespace ms
 		nl::node genderSelect = CustomizeChar["genderSelect"];
 		nl::node frame = nl::nx::mapLatest["Obj"]["login.img"]["Common"]["frame"]["2"]["0"];
 
-		// Reference v83 composition (HeavenClient): sky strip back/2 tiled,
-		// cloud back/27 drifting, scene pieces 15-18 and the Common frame.
-		sky = Texture(back["2"]);
-		cloud = back["27"];
-
-		auto scenepc = [&](nl::node src, int16_t x, int16_t y)
-		{
-			if (src)
-				scenery.emplace_back(Texture(src), Point<int16_t>(x, y));
-		};
-		scenepc(back["15"], 153, 685);
-		scenepc(back["16"], 200, 400);
-		scenepc(back["17"], 160, 263);
-		scenepc(back["18"], 349, 1220);
-		scenepc(Common["frame"], 400, 300);
+		// Use the complete v83 login scene. The individual v154-era stage
+		// pieces do not share its coordinate system and render out of bounds.
+		sky = Texture(back["11"]);
 
 		genderboard.emplace_back(Texture(board["genderTop"]), Point<int16_t>(452, 107));
 
@@ -88,7 +75,8 @@ namespace ms
 			genderboard.emplace_back(Texture(board["boardMid"]), Point<int16_t>(452, static_cast<int16_t>(221 + (24 * f))));
 
 		genderboard.emplace_back(Texture(board["boardBottom"]), Point<int16_t>(452, 341));
-		sprites_lookboard.emplace_back(CustomizeChar["charSet"], sign_args(Texture(CustomizeChar["charSet"]), 452, 112));
+		nl::node lookboard = nl::nx::uiV83["Login.img"]["NewChar"]["charSet"];
+		sprites_lookboard.emplace_back(lookboard, sign_args(Texture(lookboard), 452, 112));
 
 		for (size_t i = 0; i <= 5; i++)
 		{
@@ -242,7 +230,6 @@ namespace ms
 
 		newchar.set_direction(true);
 
-		cloudfx = 200.0f;
 	}
 
 	Point<int16_t> UIExplorerCreation::lay(int16_t x, int16_t y) const
@@ -267,16 +254,10 @@ namespace ms
 		// One gradient across the whole screen — the 20px strip is horizontally
 		// uniform, so a single stretched quad covers it seamlessly.
 		Point<int16_t> skyo = sky.get_origin();
-		sky.draw(DrawArgument(skyo, Point<int16_t>(UIScale::view_width(), UIScale::view_height())));
-
-		int16_t cloudx = static_cast<int16_t>(cloudfx) % 800;
-		cloud.draw(UIScale::stretch_args(cloud, static_cast<int16_t>(cloudx - 800), 300));
-		cloud.draw(UIScale::stretch_args(cloud, cloudx, 300));
-		cloud.draw(UIScale::stretch_args(cloud, static_cast<int16_t>(cloudx + 800), 300));
-
-		// scenic stage (tree / house / greenery / bridge) sits on top of the sky
-		for (const auto& pc : scenery)
-			pc.first.draw(UIScale::stretch_args(pc.first, pc.second.x(), pc.second.y()));
+		sky.draw(DrawArgument(
+			skyo, skyo,
+			Point<int16_t>(UIScale::view_width(), UIScale::view_height()),
+			1.0f, 1.0f, 1.0f, 0.0f));
 
 		UIElement::draw_sprites(inter);
 
@@ -364,8 +345,6 @@ namespace ms
 		}
 
 		UIElement::update();
-
-		cloudfx += 0.25f;
 	}
 
 	Button::State UIExplorerCreation::button_pressed(uint16_t buttonid)

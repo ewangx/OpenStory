@@ -48,11 +48,8 @@ namespace ms
 		float ui_scale_y;
 
 		std::vector<Sprite> sprites_lookboard;
-		std::vector<std::pair<Texture, Point<int16_t>>> scenery;
 		std::vector<std::pair<Texture, Point<int16_t>>> genderboard;
 		Texture sky;
-		Texture cloud;
-		float cloudfx;
 		Texture nameboard;
 	};
 }
