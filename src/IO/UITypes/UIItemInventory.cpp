@@ -29,6 +29,7 @@
 #include "../UITypes/UIKeyConfig.h"
 
 #include "../../Data/EquipData.h"
+#include "../../Character/JobEquipRequirement.h"
 #include "../../Gameplay/Stage.h"
 
 #include "../../Net/Packets/InventoryPackets.h"
@@ -948,8 +949,7 @@ namespace ms
 			return true;
 
 		int16_t reqJOB = equipdata.get_reqstat(MapleStat::Id::JOB);
-
-		if (!stats.get_job().is_sub_job(reqJOB))
+		if (!meets_equip_job_requirement(stats.get_job().get_id(), reqJOB))
 		{
 			UI::get().emplace<UIOk>("Your current job\\ncannot equip the selected item.", [](bool) {});
 			return false;

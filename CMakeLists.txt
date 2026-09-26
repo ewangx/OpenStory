@@ -26,6 +26,10 @@ if(BUILD_TESTING)
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/vendor/NoLifeNx)
     add_test(NAME OpenStoryNetTests COMMAND OpenStoryNetTests)
+
+    add_executable(OpenStoryEquipJobTests tests/EquipJobTests.cpp)
+    target_include_directories(OpenStoryEquipJobTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    add_test(NAME OpenStoryEquipJobTests COMMAND OpenStoryEquipJobTests)
 endif()
 
 file(GLOB_RECURSE SOURCE_FILES
