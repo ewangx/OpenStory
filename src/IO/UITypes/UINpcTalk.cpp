@@ -272,8 +272,8 @@ namespace ms
 
 				if (row_y + 16 > text_min_height && row_y < clip_bot)
 				{
-					ColorBox band(360, 16, Color::Name::LIGHTBLUE, 0.30f);
-					band.draw(DrawArgument(Point<int16_t>(position.x() + 162 - 36, row_y)));
+					ColorBox band(342, 16, Color::Name::LIGHTBLUE, 0.30f);
+					band.draw(DrawArgument(Point<int16_t>(position.x() + 162 - 18, row_y)));
 				}
 			}
 
@@ -350,12 +350,12 @@ namespace ms
 					// which option the cursor is on.
 					if (is_hovered)
 					{
-						constexpr int16_t HIGHLIGHT_W = 360;
+						constexpr int16_t HIGHLIGHT_W = 342;
 						constexpr int16_t HIGHLIGHT_H = 16;
 						ColorBox band(HIGHLIGHT_W, HIGHLIGHT_H,
 							Color::Name::LIGHTBLUE, 0.30f);
 						band.draw(DrawArgument(
-							Point<int16_t>(text_x - 36, row_y)));
+							Point<int16_t>(text_x - 18, row_y)));
 					}
 				}
 			}
