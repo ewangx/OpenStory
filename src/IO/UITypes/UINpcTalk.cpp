@@ -268,7 +268,7 @@ namespace ms
 					Color::Name::DARKGREY, Text::Background::NONE, pref_escaped, 320, true);
 
 				int16_t base_y = position.y() + 19 - offset * SCROLL_STEP;
-				int16_t row_y = base_y + prefix_text.height() - 16;
+				int16_t row_y = base_y + prefix_text.height() - 14;
 
 				if (row_y + 16 > text_min_height && row_y < clip_bot)
 				{
@@ -312,11 +312,9 @@ namespace ms
 					Text prefix_text(Text::Font::A12M, Text::Alignment::LEFT,
 						Color::Name::DARKGREY, Text::Background::NONE,
 						pref_escaped, 320, true);
-					// height() returns the baseline y of the next row after
-					// the prefix; subtract linespace so row_y points at the
-					// TOP of the option's row (where list_bg/dot sprites
-					// would normally anchor).
-					int16_t row_y = text_y + prefix_text.height() - line_h;
+					// Text layout height reaches the option's baseline; glyphs
+					// and the hover band start roughly 14 px above it.
+					int16_t row_y = text_y + prefix_text.height() - 14;
 					Point<int16_t> row_pos(text_x - 36, row_y);
 					Point<int16_t> dot_pos(text_x - 14, row_y + 3);
 
@@ -730,7 +728,6 @@ namespace ms
 				: (position.y() + 48);
 			int16_t text_w = 320;
 			int16_t line_h = 16; // approximate line height for A12M font
-			int16_t band_pad = 4; // extra px above/below each option row
 
 			// Visible clip band (slider mode) — options scrolled out of view
 			// must not be clickable/hoverable.
@@ -754,20 +751,16 @@ namespace ms
 					Color::Name::DARKGREY, Text::Background::NONE,
 					pref_escaped, 320, true);
 
-				// prefix_text.height() is the baseline-y of where THIS
-				// option's glyphs render. Glyphs extend roughly from
-				// (baseline - 14) to baseline — define the hit-test row
-				// around that range so clicking the visible text registers.
-				int16_t baseline = text_y + prefix_text.height();
-				int16_t row_top  = baseline - line_h - band_pad;
-				int16_t row_bot  = baseline + band_pad;
+				// Match the hover band's top edge and the visible glyphs.
+				int16_t row_top = text_y + prefix_text.height() - 14;
+				int16_t row_bot = row_top + line_h;
 
 				// Skip options scrolled out of the visible band when sliding.
 				if (show_slider && (row_bot < clip_top || row_top > clip_bot))
 					continue;
 
 				if (cursorpos.x() >= text_x && cursorpos.x() <= text_x + text_w &&
-					cursorpos.y() >= row_top && cursorpos.y() <= row_bot)
+					cursorpos.y() >= row_top && cursorpos.y() < row_bot)
 				{
 					hovered_selection = static_cast<int32_t>(i);
 
@@ -1147,11 +1140,14 @@ namespace ms
 			try { sel_index = std::stoi(tx.substr(idx_start, idx_end - idx_start)); }
 			catch (...) { break; }
 
-			// Read the option text until #l
+			// Some scripts omit #l between options; the next #L starts a new entry.
 			size_t text_start = idx_end + 1;
 			size_t text_end = tx.find("#l", text_start);
-			if (text_end == std::string::npos)
-				text_end = tx.size();
+			size_t next_link = tx.find("#L", text_start);
+			bool has_terminator = text_end != std::string::npos
+				&& (next_link == std::string::npos || text_end < next_link);
+			if (!has_terminator)
+				text_end = next_link == std::string::npos ? tx.size() : next_link;
 
 			std::string option_text = tx.substr(text_start, text_end - text_start);
 
@@ -1241,7 +1237,7 @@ namespace ms
 			result += "#k";
 			line++;
 
-			pos = text_end + 2; // skip past #l
+			pos = has_terminator ? text_end + 2 : text_end;
 		}
 
 		return result;
