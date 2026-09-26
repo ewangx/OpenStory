@@ -33,6 +33,12 @@ namespace ms
 		nl::node src = nl::nx::mob[strid + ".img"];
 
 		nl::node info = src["info"];
+		nl::node visuals = src;
+		if (info["link"])
+		{
+			std::string linked_id = static_cast<std::string>(info["link"]);
+			visuals = nl::nx::mob[string_format::extend_id(std::stoi(linked_id), 7) + ".img"];
+		}
 
 		level = info["level"];
 		watk = info["PADamage"];
@@ -53,24 +59,24 @@ namespace ms
 		facesright = info["ai"].get_bool();
 		notattack = info["notAttack"].get_bool();
 		boss = info["boss"].get_bool();
-		canjump = src["jump"].size() > 0;
-		canfly = src["fly"].size() > 0;
-		canmove = src["move"].size() > 0 || canfly;
+		canjump = visuals["jump"].size() > 0;
+		canfly = visuals["fly"].size() > 0;
+		canmove = visuals["move"].size() > 0 || canfly;
 
 		if (canfly)
 		{
-			animations[Stance::STAND] = src["fly"];
-			animations[Stance::MOVE] = src["fly"];
+			animations[Stance::STAND] = visuals["fly"];
+			animations[Stance::MOVE] = visuals["fly"];
 		}
 		else
 		{
-			animations[Stance::STAND] = src["stand"];
-			animations[Stance::MOVE] = src["move"];
+			animations[Stance::STAND] = visuals["stand"];
+			animations[Stance::MOVE] = visuals["move"];
 		}
 
-		animations[Stance::JUMP] = src["jump"];
-		animations[Stance::HIT] = src["hit1"];
-		animations[Stance::DIE] = src["die1"];
+		animations[Stance::JUMP] = visuals["jump"];
+		animations[Stance::HIT] = visuals["hit1"];
+		animations[Stance::DIE] = visuals["die1"];
 
 		name = (std::string)nl::nx::string["Mob.img"][std::to_string(mid)]["name"];
 
