@@ -111,6 +111,13 @@ namespace ms
 		if (player.is_attacking())
 			return;
 
+		if (player.get_phobj().onground && player.get_phobj().vforce >= 0.0f
+			&& player.is_key_down(KeyAction::Id::JUMP) && !player.is_key_down(KeyAction::Id::DOWN))
+		{
+			play_jumpsound();
+			player.get_phobj().vforce = -player.get_jumpforce();
+		}
+
 		if (hasrightinput(player))
 		{
 			player.set_direction(true);
@@ -167,6 +174,13 @@ namespace ms
 
 		if (player.is_attacking())
 			return;
+
+		if (player.get_phobj().onground && player.get_phobj().vforce >= 0.0f
+			&& player.is_key_down(KeyAction::Id::JUMP) && !player.is_key_down(KeyAction::Id::DOWN))
+		{
+			play_jumpsound();
+			player.get_phobj().vforce = -player.get_jumpforce();
+		}
 
 		if (haswalkinput(player))
 		{
