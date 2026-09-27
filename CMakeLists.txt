@@ -30,6 +30,10 @@ if(BUILD_TESTING)
     add_executable(OpenStoryEquipJobTests tests/EquipJobTests.cpp)
     target_include_directories(OpenStoryEquipJobTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
     add_test(NAME OpenStoryEquipJobTests COMMAND OpenStoryEquipJobTests)
+
+    add_executable(OpenStoryBackgroundTilingTests tests/BackgroundTilingTests.cpp)
+    target_include_directories(OpenStoryBackgroundTilingTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    add_test(NAME OpenStoryBackgroundTilingTests COMMAND OpenStoryBackgroundTilingTests)
 endif()
 
 file(GLOB_RECURSE SOURCE_FILES

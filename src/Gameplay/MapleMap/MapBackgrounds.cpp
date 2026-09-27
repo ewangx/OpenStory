@@ -16,6 +16,7 @@
 //	along with this program.  If not, see <https://www.gnu.org/licenses/>.		//
 //////////////////////////////////////////////////////////////////////////////////
 #include "MapBackgrounds.h"
+#include "BackgroundTiling.h"
 
 #include "../../Graphics/GraphicsGL.h"
 
@@ -55,34 +56,20 @@ namespace ms
 	{
 		int16_t dim_x = animation.get_dimensions().x();
 		int16_t dim_y = animation.get_dimensions().y();
-
-		// Skip zero-dimension backgrounds
-		if (cx == 0)
-			cx = (dim_x > 0) ? dim_x : 1;
-
-		if (cy == 0)
-			cy = (dim_y > 0) ? dim_y : 1;
-
-		htile = 1;
-		vtile = 1;
-
-		switch (type)
-		{
-		case Type::HTILED:
-		case Type::HMOVEA:
-			htile = VWIDTH / cx + 3;
-			break;
-		case Type::VTILED:
-		case Type::VMOVEA:
-			vtile = VHEIGHT / cy + 3;
-			break;
-		case Type::TILED:
-		case Type::HMOVEB:
-		case Type::VMOVEB:
-			htile = VWIDTH / cx + 3;
-			vtile = VHEIGHT / cy + 3;
-			break;
-		}
+		bool repeat_x = type == Type::HTILED || type == Type::HMOVEA
+			|| type == Type::TILED || type == Type::HMOVEB || type == Type::VMOVEB;
+		bool repeat_y = type == Type::VTILED || type == Type::VMOVEA
+			|| type == Type::TILED || type == Type::HMOVEB || type == Type::VMOVEB;
+		BackgroundTileCounts counts = background_tile_counts(dim_x, dim_y, cx, cy,
+			VWIDTH, VHEIGHT, repeat_x, repeat_y);
+		htile = counts.horizontal;
+		vtile = counts.vertical;
+		if (htile == 0 || vtile == 0)
+			return;
+		if (cx <= 0)
+			cx = dim_x;
+		if (cy <= 0)
+			cy = dim_y;
 
 		switch (type)
 		{
