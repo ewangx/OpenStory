@@ -144,6 +144,12 @@ namespace ms
 
 			while (getline(file, line))
 			{
+				// Files written on Windows use CRLF; getline only strips the
+				// LF, so drop a trailing CR or every loaded value (e.g.
+				// "SaveLogin = true\r") silently fails to parse back.
+				if (!line.empty() && line.back() == '\r')
+					line.pop_back();
+
 				// If the setting is not empty, load the value.
 				size_t split = line.find('=');
 

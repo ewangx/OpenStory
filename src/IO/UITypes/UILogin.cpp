@@ -149,16 +149,15 @@ namespace ms
 		{
 			account.change_text(Setting<DefaultAccount>::get().load());
 
-			std::string saved_pass = Setting<DefaultPassword>::get().load();
-			if (!saved_pass.empty())
+			// ID only: drop any password stored by older builds, then
+			// focus the password field so it can be typed.
+			if (!Setting<DefaultPassword>::get().load().empty())
 			{
-				password.change_text(saved_pass);
-				password.set_state(Textfield::State::NORMAL);
+				Setting<DefaultPassword>::get().save("");
+				Configuration::get().save();
 			}
-			else
-			{
-				password.set_state(Textfield::State::FOCUSED);
-			}
+
+			password.set_state(Textfield::State::FOCUSED);
 		}
 		else
 		{
@@ -243,7 +242,9 @@ namespace ms
 		if (saveid)
 		{
 			Setting<DefaultAccount>::get().save(account_text);
-			Setting<DefaultPassword>::get().save(password_text);
+			// ID only: never persist the password, and drop any password
+			// stored by older builds so it doesn't linger on disk.
+			Setting<DefaultPassword>::get().save("");
 			Configuration::get().save();
 		}
 
@@ -342,6 +343,29 @@ namespace ms
 
 		if (Cursor::State new_state = password.send_cursor(cursorpos, clicked))
 			return new_state;
+
+		// The check-box drawn next to the 'Save loginID' label is standalone
+		// art (Login.img/Title/check) and not part of the BtLoginIDSave button,
+		// so clicks landing on the box itself never reach button_pressed.
+		// Hit-test it here, in the same coordinates used by draw().
+		if (checkbox[saveid].is_valid())
+		{
+			Point<int16_t> checkpos = get_draw_position() + signboard_pos + Point<int16_t>(-120, -25);
+			Point<int16_t> lt = checkpos - checkbox[saveid].get_origin();
+			Rectangle<int16_t> checkrect(lt, lt + checkbox[saveid].get_dimensions());
+
+			if (checkrect.contains(cursorpos))
+			{
+				if (clicked)
+				{
+					Sound(Sound::Name::BUTTONCLICK).play();
+
+					button_pressed(Buttons::BT_SAVEID);
+				}
+
+				return clicked ? Cursor::State::IDLE : Cursor::State::CANCLICK;
+			}
+		}
 
 		return UIElement::send_cursor(clicked, cursorpos);
 	}
