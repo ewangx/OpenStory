@@ -251,7 +251,7 @@ namespace ms
 		std::string VolumeSerialNumber;
 		uint8_t worldid;
 		uint8_t channelid;
-		bool admin;
+		bool admin = false;
 		int32_t auto_hp_pot = 0;
 		int32_t auto_mp_pot = 0;
 		bool extra_pendant_slot = false;

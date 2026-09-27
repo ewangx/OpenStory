@@ -17,6 +17,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 #include "Job.h"
 
+#include "../Configuration.h"
+
 namespace ms
 {
 	Job::Job(uint16_t i)
@@ -63,6 +65,15 @@ namespace ms
 
 	bool Job::can_use(int32_t skill_id) const
 	{
+		// GMs can use any skill, even from a different job. This mirrors
+		// the server's isGM() bypass: GM-job characters (900/910) as well
+		// as admin accounts playing a normal job.
+		if (id == 900 || id == 910)
+			return true;
+
+		if (Configuration::get().get_admin())
+			return true;
+
 		uint16_t required = static_cast<uint16_t>(skill_id / 10000);
 
 		// Prefix-0 skills (000.img — common beginner skills like Monster
