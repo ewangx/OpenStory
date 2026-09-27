@@ -17,12 +17,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 #include "Player.h"
 
+#include "Buff.h"
 #include "PlayerStates.h"
 #include "SkillId.h"
 
 #include "../Configuration.h"
 
 #include "../Audio/Audio.h"
+#include "../Data/SkillData.h"
 #include "../Data/WeaponData.h"
 #include "../IO/UI.h"
 #include "../IO/UITypes/UISkillBook.h"
@@ -188,6 +190,15 @@ namespace ms
 		if (layer == get_layer())
 		{
 			Point<int16_t> absp = phobj.get_absolute(viewx, viewy, alpha);
+
+			// Shadow Partner copy: translucent look slightly behind the
+			// player, drawn under the main sprite. Matches vanilla where
+			// the partner mimics the stance; we reuse the same look/frame.
+			if (has_buff(Buffstat::Id::SHADOWPARTNER) && state != Char::State::DIED && !mount.is_active())
+			{
+				Point<int16_t> shadowpos = absp + sit_offset + Point<int16_t>(facing_right ? -22 : 22, 0);
+				look.draw(DrawArgument(shadowpos, Color(0.55f, 0.55f, 0.75f, 0.55f)), alpha);
+			}
 
 			// info/effect draws behind the body (the chair itself), grounded at
 			// the feet by chair_pos.
@@ -440,6 +451,19 @@ namespace ms
 		}
 
 		int32_t level = skillbook.get_level(moveid);
+		// Generic item-consumption check (e.g. Shadow Partner's Summoning
+		// Rock 4006001). Mirrors Cosmic's StatEffect itemCon/itemConNo gate
+		// so a doomed cast is blocked locally with a message instead of
+		// playing the animation and getting a silent enableActions.
+		if (level > 0)
+		{
+			const SkillData::Stats& sstats = SkillData::get(moveid).get_stats(level);
+
+			if (sstats.itemcon != 0 && sstats.itemconno > 0)
+				if (inventory.get_total_item_count(sstats.itemcon) < sstats.itemconno)
+					return SpecialMove::ForbidReason::FBR_ITEMCOST;
+		}
+
 		Weapon::Type weapon = get_weapontype();
 		const Job& job = stats.get_job();
 		uint16_t hp = stats.get_stat(MapleStat::Id::HP);

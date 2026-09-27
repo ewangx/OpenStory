@@ -68,12 +68,14 @@ namespace ms
 			float ignoredef = 0.0f;
 			float hrange = (float)sub["range"].get_real(100.0) / 100;
 			Rectangle<int16_t> range = sub;
+			int32_t itemcon = sub["itemCon"].get_integer(0);
+			int32_t itemconno = sub["itemConNo"].get_integer(0);
 			int32_t level = string_conversion::or_default<int32_t>(sub.name(), -1);
 
 			stats.emplace(
 				std::piecewise_construct,
 				std::forward_as_tuple(level),
-				std::forward_as_tuple(damage, matk, fixdamage, mastery, attackcount, mobcount, bulletcount, bulletcost, hpcost, mpcost, chance, critical, ignoredef, hrange, range)
+				std::forward_as_tuple(damage, matk, fixdamage, mastery, attackcount, mobcount, bulletcount, bulletcost, hpcost, mpcost, chance, critical, ignoredef, hrange, range, itemcon, itemconno)
 			);
 		}
 
@@ -216,7 +218,7 @@ namespace ms
 
 		if (iter == stats.end())
 		{
-			static constexpr Stats null_stats = Stats(0.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, Rectangle<int16_t>());
+			static constexpr Stats null_stats = Stats(0.0f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0f, 0.0f, 0.0f, Rectangle<int16_t>(), 0, 0);
 
 			return null_stats;
 		}

@@ -35,6 +35,7 @@ namespace ms
 			SKILL_NOBULLETS,
 			SKILL_NOSTARS,
 			SKILL_COOLDOWN,
+			SKILL_ITEMCOST,
 
 			// Scrolling result
 			SCROLL_SUCCESS,

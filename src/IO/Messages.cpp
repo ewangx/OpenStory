@@ -33,6 +33,7 @@ namespace ms
 		"You do not have enough bullets to use this attack.",
 		"You do not have enough throwing stars to use this attack.",
 		"You cannot use this skill as it is on cooldown.",
+		"You do not have the required item to use this skill.",
 		"The scroll lights up and it's mysterious powers have been transferred to the item.",
 		"The scroll lights up but the item remains as if nothing happened.",
 		"The item has been destroyed due to the overwhelming power of the scroll."
@@ -66,6 +67,8 @@ namespace ms
 			return Messages::Type::SKILL_MPCOST;
 		case SpecialMove::ForbidReason::FBR_COOLDOWN:
 			return Messages::Type::SKILL_COOLDOWN;
+		case SpecialMove::ForbidReason::FBR_ITEMCOST:
+			return Messages::Type::SKILL_ITEMCOST;
 		case SpecialMove::ForbidReason::FBR_BULLETCOST:
 			return message_by_weapon(weapon);
 		default:

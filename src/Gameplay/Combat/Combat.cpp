@@ -18,6 +18,7 @@
 #include "Combat.h"
 
 #include "../../Character/SkillId.h"
+#include "../../Character/Buff.h"
 #include "../../Data/SkillData.h"
 #include "../../IO/Messages.h"
 #include "../../IO/KeyAction.h"
@@ -144,6 +145,20 @@ namespace ms
 
 			move.apply_stats(player, attack);
 
+			// Shadow Partner doubles weapon CLOSE/RANGED hits. The copy's
+			// lines deal ~50% damage, matching Cosmic's
+			// AbstractDealDamageHandler validation (second half at 0.5x max).
+			bool shadowpartner = player.has_buff(Buffstat::Id::SHADOWPARTNER)
+				&& attack.damagetype == Attack::DMG_WEAPON
+				&& (attack.type == Attack::CLOSE || attack.type == Attack::RANGED)
+				&& attack.hitcount > 0;
+
+			if (shadowpartner)
+			{
+				uint16_t doubled = static_cast<uint16_t>(attack.hitcount) * 2;
+				attack.hitcount = static_cast<uint8_t>(doubled > 255 ? 255 : doubled);
+			}
+
 			Point<int16_t> origin = attack.origin;
 			Rectangle<int16_t> range = attack.range;
 			int16_t hrange = static_cast<int16_t>(range.left() * attack.hrange);
@@ -179,6 +194,25 @@ namespace ms
 
 			mobs.send_attack(result, attack, mob_targets, mobcount);
 			result.attacker = player.get_oid();
+
+			if (shadowpartner)
+			{
+				// Halve the copy's lines so display, server damage, and the
+				// 0.5x anti-cheat window agree. Misses (0) stay 0.
+				size_t half = attack.hitcount / 2;
+
+				for (auto& line : result.damagelines)
+				{
+					auto& hits = line.second;
+
+					for (size_t i = half; i < hits.size(); i++)
+					{
+						hits[i].first = hits[i].first / 2;
+					}
+				}
+
+				result.hitcount = attack.hitcount;
+			}
 
 			// Cosmic applies the damage (and can kill the mob) as soon as it
 			// receives this packet. Hold targeted ranged projectiles until their
