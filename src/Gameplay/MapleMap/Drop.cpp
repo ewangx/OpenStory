@@ -127,8 +127,10 @@ namespace ms
 
 	Rectangle<int16_t> Drop::bounds() const
 	{
-		auto lt = get_position();
-		auto rb = lt + Point<int16_t>(32, 32);
+		auto position = get_position();
+		// The drop is anchored at its center, so allow pickup from either side.
+		auto lt = position + Point<int16_t>(-32, 0);
+		auto rb = position + Point<int16_t>(32, 32);
 
 		return Rectangle<int16_t>(lt, rb);
 	}
