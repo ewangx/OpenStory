@@ -211,6 +211,16 @@ namespace ms
 	{
 		fullscreen = Setting<Fullscreen>::get().load();
 
+#ifdef __APPLE__
+		// GLFW on macOS chdirs into the bundle's Resources folder on init
+		// by default. That would redirect all relative file access
+		// (Settings, crash logs, screenshots) away from the directory
+		// selected via OPENSTORY_ASSET_DIR, so keep our working directory.
+#ifdef GLFW_COCOA_CHDIR_RESOURCES
+		glfwInitHint(GLFW_COCOA_CHDIR_RESOURCES, GLFW_FALSE);
+#endif
+#endif
+
 		if (!glfwInit())
 			return Error::Code::GLFW;
 

@@ -18,7 +18,9 @@
 #include "Configuration.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <unordered_set>
 
 namespace ms
@@ -178,7 +180,16 @@ namespace ms
 		std::ofstream config(FILENAME);
 
 		if (!config.is_open())
+		{
+			// Failing silently here looks exactly like "settings don't
+			// persist" (e.g. running as a different user than the file
+			// owner), so say where the write was attempted.
+			std::error_code error;
+			std::cerr << "[Settings] Cannot write '" << FILENAME << "' in '"
+				<< std::filesystem::current_path(error).string() << "'."
+				<< std::endl;
 			return;
+		}
 
 		// Section -> ordered key list. Anything not listed falls into Window
 		// Positions (if it starts with "Pos") or Other (alphabetical).
