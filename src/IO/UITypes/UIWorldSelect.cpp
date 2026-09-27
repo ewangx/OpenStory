@@ -125,6 +125,19 @@ namespace ms
 		world_pos = WORLD_POS;
 
 		nl::node login = nl::nx::ui["Login.img"];
+
+		// The layout below is authored against the v83 WorldSelect art
+		// (hanging 26x95 planks, 513x401 scroll, 449-wide channel sheet).
+		// Newer UI.nx files ship a redesigned WorldSelect (81x24 world
+		// buttons, 371x222 dialog) whose sizes break every offset here,
+		// so prefer the UI.v83.nx overlay when it provides the legacy
+		// screen (same pattern as the other legacy login screens).
+		nl::node legacy_login = nl::nx::uiV83["Login.img"];
+
+		if (legacy_login)
+			if (legacy_login["WorldSelect"])
+				login = legacy_login;
+
 		world_select = login["WorldSelect"];
 		world_src = world_select["BtWorld"];
 		channel_src = world_select["channel"];
