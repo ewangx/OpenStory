@@ -123,6 +123,10 @@ namespace ms
 		uint8_t speed = 0;
 		bool toleft = false;
 		std::unordered_map<int32_t, std::vector<std::pair<int32_t, bool>>> damagelines;
+		// Meso Explosion only: object IDs of the meso drops detonated for
+		// this attack. Encoded as the trailing drop list the server parses
+		// in parseMesoExplosion and removes with the explode animation.
+		std::vector<int32_t> exploded_drops;
 		int32_t first_oid;
 		int32_t last_oid;
 	};

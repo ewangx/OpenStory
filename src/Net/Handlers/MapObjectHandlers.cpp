@@ -543,6 +543,18 @@ namespace ms
 		int8_t mode = recv.read_byte();
 		int32_t oid = recv.read_int();
 
+		// Meso Explosion removal (Cosmic removeExplodedMesoFromMap) carries
+		// a short explode delay instead of a looter id — no pickup sound or
+		// looter animation applies.
+		if (mode == 4)
+		{
+			if (recv.length() >= 2)
+				recv.read_short();
+
+			Stage::get().get_drops().remove(oid, mode, nullptr);
+			return;
+		}
+
 		Optional<PhysicsObject> looter;
 
 		if (mode > 1)

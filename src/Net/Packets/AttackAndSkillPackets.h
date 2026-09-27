@@ -18,6 +18,7 @@
 #pragma once
 
 #include "../OutPacket.h"
+#include "../../Character/SkillId.h"
 
 namespace ms
 {
@@ -32,6 +33,12 @@ namespace ms
 		AttackPacket(const AttackResult& attack) : OutPacket(opcodefor(attack.type))
 		{
 			skip(1);
+
+			if (attack.skill == SkillId::MESO_EXPLOSION)
+			{
+				write_meso_explosion(attack);
+				return;
+			}
 
 			write_byte((attack.mobcount << 4) | attack.hitcount);
 			write_int(attack.skill);
@@ -82,6 +89,61 @@ namespace ms
 		}
 
 	private:
+		// Meso Explosion uses its own CLOSE_ATTACK layout on the wire, which
+		// Cosmic decodes in parseMesoExplosion: per-mob damage-count byte
+		// (instead of the fixed hitcount / delay), then a trailing exploded
+		// meso list and attack delay. Keep this byte-identical to that parser.
+		void write_meso_explosion(const AttackResult& attack)
+		{
+			uint8_t mobcount = static_cast<uint8_t>(attack.damagelines.size());
+			uint8_t hitnibble = static_cast<uint8_t>(attack.hitcount & 0xF);
+
+			write_byte(static_cast<int8_t>((mobcount << 4) | hitnibble));
+			write_int(attack.skill);
+
+			skip(8);
+
+			write_byte(attack.display);
+			write_byte(attack.toleft);
+			write_byte(attack.stance);
+
+			// Matches the 6 bytes parseMesoExplosion skips here
+			// (normal close-attack speed + padding).
+			skip(1);
+			write_byte(attack.speed);
+			skip(4);
+
+			for (auto& damagetomob : attack.damagelines)
+			{
+				write_int(damagetomob.first);
+
+				skip(4);
+				write_point(Point<int16_t>(0, 0));
+				write_point(Point<int16_t>(0, 0));
+
+				uint8_t lines = static_cast<uint8_t>(damagetomob.second.size() & 0xFF);
+				write_byte(static_cast<int8_t>(lines));
+
+				for (auto& singledamage : damagetomob.second)
+					write_int(singledamage.first);
+
+				skip(4);
+			}
+
+			skip(4);
+
+			uint8_t mesos = static_cast<uint8_t>(attack.exploded_drops.size() & 0xFF);
+			write_byte(static_cast<int8_t>(mesos));
+
+			for (int32_t oid : attack.exploded_drops)
+			{
+				write_int(oid);
+				skip(1);
+			}
+
+			write_short(0);
+		}
+
 		static OutPacket::Opcode opcodefor(Attack::Type type)
 		{
 			switch (type)

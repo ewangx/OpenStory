@@ -122,6 +122,11 @@ namespace ms
 			phobj.vspeed = -4.5f;
 			phobj.type = PhysicsObject::Type::NORMAL;
 			break;
+		case 4:
+			// Meso Explosion detonation: the server already applied damage,
+			// just clear the drop locally (same as an expiry).
+			deactivate();
+			break;
 		}
 	}
 

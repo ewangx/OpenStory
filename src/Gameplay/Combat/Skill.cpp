@@ -89,7 +89,14 @@ namespace ms
 		bool hashit0 = src["hit"]["0"].size() > 0;
 		bool hashit1 = src["hit"]["1"].size() > 0;
 
-		if (bylevelhit)
+		if (skillid == SkillId::BAND_OF_THIEVES && src["hit"]["2"].size() > 0)
+		{
+			// Band of Thieves carries one hit animation per target
+			// (hit/0 .. hit/5), not per-weapon variants, so cycle them
+			// instead of showing hit/0 on every mob.
+			hiteffect = std::make_unique<CyclingHitEffect>(src);
+		}
+		else if (bylevelhit)
 		{
 			if (hashit0 && hashit1)
 				hiteffect = std::make_unique<ByLevelTwoHHitEffect>(src);
@@ -198,8 +205,14 @@ namespace ms
 		}
 		else
 		{
-			attack.mindamage *= stats.damage;
-			attack.maxdamage *= stats.damage;
+			// Meso Explosion carries no `damage` node in Skill.wz (only `x`
+			// / `attackCount` / `mobCount`), so stats.damage is 0. Multiplying
+			// by it would zero out the whole attack — keep base weapon damage.
+			if (stats.damage > 0.0f)
+			{
+				attack.mindamage *= stats.damage;
+				attack.maxdamage *= stats.damage;
+			}
 			attack.damagetype = Attack::DMG_WEAPON;
 		}
 

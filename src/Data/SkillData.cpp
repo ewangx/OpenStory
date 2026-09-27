@@ -167,6 +167,7 @@ namespace ms
 			{ SkillId::AVENGER, ATTACK | RANGED },
 			{ SkillId::ASSAULTER, ATTACK },
 			{ SkillId::BAND_OF_THIEVES, ATTACK },
+			{ SkillId::MESO_EXPLOSION, ATTACK },
 			// Night Lord / Shadower
 			{ SkillId::NIGHT_LORD_TAUNT, ATTACK | RANGED },
 			{ SkillId::TRIPLE_THROW, ATTACK | RANGED },

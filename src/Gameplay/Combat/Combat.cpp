@@ -33,6 +33,9 @@
 
 #include "../../Net/Packets/AttackAndSkillPackets.h"
 #include "../../Net/Packets/GameplayPackets.h"
+#include "../../IO/UITypes/UIChatBar.h"
+#include "../MapleMap/MesoDrop.h"
+#include "../Stage.h"
 
 namespace ms
 {
@@ -148,7 +151,10 @@ namespace ms
 			// Shadow Partner doubles weapon CLOSE/RANGED hits. The copy's
 			// lines deal ~50% damage, matching Cosmic's
 			// AbstractDealDamageHandler validation (second half at 0.5x max).
+			// Meso Explosion is excluded: its line count is
+			// (mesos x attackCount), not a weapon swing to mirror.
 			bool shadowpartner = player.has_buff(Buffstat::Id::SHADOWPARTNER)
+				&& move.get_id() != SkillId::MESO_EXPLOSION
 				&& attack.damagetype == Attack::DMG_WEAPON
 				&& (attack.type == Attack::CLOSE || attack.type == Attack::RANGED)
 				&& attack.hitcount > 0;
@@ -183,6 +189,63 @@ namespace ms
 			}
 
 			// This approach should also make it easier to implement PvP
+			// Meso Explosion detonates the meso drops lying in the skill's range:
+			// one attackCount-sized volley per meso on every mob, matching the
+			// skill's "attacks per meso per enemy" description. The drop OIDs
+			// travel in the packet's trailing list so Cosmic can remove them
+			// with the explode animation (parseMesoExplosion).
+			bool is_meso_explosion = (move.get_id() == SkillId::MESO_EXPLOSION);
+			std::vector<int32_t> exploded_mesas;
+
+			if (is_meso_explosion)
+			{
+				constexpr size_t MAX_MESO_DROPS = 10;
+
+				std::multimap<uint16_t, int32_t> by_distance;
+
+				if (MapObjects* drop_objs = Stage::get().get_drops().get_drops())
+				{
+					for (auto& mmo : *drop_objs)
+					{
+						const MesoDrop* meso = dynamic_cast<const MesoDrop*>(mmo.second.get());
+
+						if (!meso || !meso->is_active())
+							continue;
+
+						Point<int16_t> pos = meso->get_position();
+
+						if (!range.contains(pos))
+							continue;
+
+						by_distance.emplace(pos.distance(origin), mmo.first);
+					}
+				}
+
+				for (auto& entry : by_distance)
+				{
+					if (exploded_mesas.size() >= MAX_MESO_DROPS)
+						break;
+
+					exploded_mesas.push_back(entry.second);
+				}
+
+				if (exploded_mesas.empty())
+				{
+					chat::log("There are no mesos to explode nearby.", chat::LineType::RED);
+					return;
+				}
+
+				uint16_t total = static_cast<uint16_t>(exploded_mesas.size()) * attack.hitcount;
+
+				if (total < 1)
+					total = 1;
+
+				if (total > 255)
+					total = 255;
+
+				attack.hitcount = static_cast<uint8_t>(total);
+			}
+
 			uint8_t mobcount = attack.mobcount;
 			AttackResult result = attack;
 
@@ -194,6 +257,9 @@ namespace ms
 
 			mobs.send_attack(result, attack, mob_targets, mobcount);
 			result.attacker = player.get_oid();
+
+			if (is_meso_explosion)
+				result.exploded_drops = exploded_mesas;
 
 			if (shadowpartner)
 			{
