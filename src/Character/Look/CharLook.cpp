@@ -555,6 +555,18 @@ namespace ms
 		}
 	}
 
+	void CharLook::restart_stance(Stance::Id newstance)
+	{
+		if (action || newstance == Stance::Id::NONE)
+			return;
+
+		Stance::Id adjstance = equips.adjust_stance(newstance);
+
+		stance.set(adjstance);
+		stframe.set(0);
+		stelapsed = 0;
+	}
+
 	void CharLook::set_stance_forced(Stance::Id newstance)
 	{
 		// Cancel any in-progress action (attack, skill) so the requested

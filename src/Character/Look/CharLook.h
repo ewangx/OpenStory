@@ -49,6 +49,11 @@ namespace ms
 		void attack(bool degenerate);
 		void attack(Stance::Id stance);
 		void set_stance(Stance::Id stance);
+		// Restart a stance from frame 0 even if it is already active.
+		// set_stance is a no-op for the current stance (so walk/fall loops
+		// keep animating); movement skills like Flash Jump need a visible
+		// re-kick when the character is already airborne in JUMP.
+		void restart_stance(Stance::Id stance);
 		// Force a stance even if an action (e.g. an attack) is playing, by
 		// cancelling that action first. Used for death, which must override
 		// whatever the character was doing when HP hit 0.

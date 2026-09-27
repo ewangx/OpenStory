@@ -79,10 +79,19 @@ namespace ms
 		// have to be inferred. The distance check below cannot tell a warp from
 		// a lag recovery; this can, which is what makes showing the effect safe.
 		bool warped = false;
+		bool flashed = false;
 
 		for (const Movement& m : newmoves)
+		{
 			if (m.type == Movement::TELEPORT)
 				warped = true;
+
+			// Flash Jump arrives as a relative movement with command 6 and
+			// carries no skill effect of its own — same as the local player,
+			// it needs an explicit animation or the dash is invisible.
+			if (m.command == 6)
+				flashed = true;
+		}
 
 		// Recover from big jumps (teleport, flash jump, or a position that
 		// drifted out of sync) by snapping straight to the server position
@@ -106,6 +115,17 @@ namespace ms
 		{
 			static Animation tp_effect(nl::nx::effect["BasicEff.img"]["Teleport"]);
 			show_attack_effect(tp_effect, 0);
+		}
+
+		// Flash Jump likewise has no authored effect/action in Skill.wz;
+		// mirror the local player's substituted animation (JUMP re-kick plus
+		// the blue ring burst) so another hermit's dash reads instead of
+		// gliding silently.
+		if (flashed)
+		{
+			static Animation fj_effect(nl::nx::effect["BasicEff.img"]["Flying"]);
+			show_attack_effect(fj_effect, 0);
+			get_look().restart_stance(Stance::Id::JUMP);
 		}
 
 		lastmove = target;

@@ -61,6 +61,10 @@ namespace ms
 		// use-effect, so anything rendering them has to substitute the standard
 		// BasicEff puff explicitly.
 		static bool is_teleport_skill(int32_t skillid);
+		// Flash Jump (Hermit + Night Walker) likewise carries no authored
+		// use-effect or action in Skill.wz, so its animation has to be
+		// substituted explicitly too.
+		static bool is_flash_jump_skill(int32_t skillid);
 		// Show a buff effect
 		void show_player_buff(int32_t skillid);
 

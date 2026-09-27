@@ -316,22 +316,32 @@ namespace ms
 		}
 	}
 
+	bool Combat::is_flash_jump_skill(int32_t skillid)
+	{
+		switch (skillid)
+		{
+		case SkillId::Id::FLASH_JUMP:
+		case SkillId::Id::NIGHT_WALKER_FLASH_JUMP:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	void Combat::apply_use_movement(const SpecialMove& move)
 	{
-		switch (move.get_id())
+		int32_t moveid = move.get_id();
+
+		if (is_teleport_skill(moveid))
 		{
-		case SkillId::Id::TELEPORT_FP:
-		case SkillId::Id::IL_TELEPORT:
-		case SkillId::Id::PRIEST_TELEPORT:
-		case SkillId::Id::GM_TELEPORT:
-		case SkillId::Id::SUPERGM_TELEPORT:
 			apply_teleport(move);
-			break;
-		case SkillId::Id::FLASH_JUMP:
+			return;
+		}
+
+		if (is_flash_jump_skill(moveid))
+		{
 			apply_flash_jump();
-			break;
-		default:
-			break;
+			return;
 		}
 	}
 
@@ -353,6 +363,19 @@ namespace ms
 
 		if (phobj.vspeed > 0.0)
 			phobj.vspeed = FLASH_JUMP_VPOP;
+
+		// Flash Jump carries no authored use-effect or action in Skill.wz
+		// (4111006/14101004 have neither `effect` nor `action` nodes), so
+		// without this the dash is a silent slide: movement with no visual.
+		// Re-kick the JUMP pose (restart, since set_stance is a no-op while
+		// already airborne) and show the blue ring burst around the
+		// character. BasicEff/Flying is unreferenced by any data and matches
+		// the expected ring: a teal-blue ring with energy orbs that flashes
+		// around the character mid-dash.
+		player.get_look().restart_stance(Stance::Id::JUMP);
+
+		static Animation fj_effect(nl::nx::effect["BasicEff.img"]["Flying"]);
+		player.show_attack_effect(fj_effect, 0);
 	}
 
 	void Combat::apply_teleport(const SpecialMove& move)
