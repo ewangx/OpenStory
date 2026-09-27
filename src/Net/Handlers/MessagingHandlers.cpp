@@ -192,26 +192,27 @@ namespace ms
 					nl::node info = nl::nx::quest["QuestInfo.img"][std::to_string(qid)];
 					if (info)
 						qname = info["name"].get_string();
-					if (qname.empty())
-						qname = "Quest #" + std::to_string(qid);
 
-					Notifications::notify(
-						"Quest Ready",
-						qname + " is ready to complete!",
-						[qid](bool yes)
-						{
-							if (!yes)
-								return;
-							auto log = UI::get().get_element<UIQuestLog>();
-							if (!log)
+					// Undefined quest slots can be server-side state flags, not
+					// player-facing quests. Don't display their numeric ids.
+					if (!qname.empty())
+						Notifications::notify(
+							"Quest Ready",
+							qname + " is ready to complete!",
+							[qid](bool yes)
 							{
-								UI::get().emplace<UIQuestLog>(
-									Stage::get().get_player().get_quests());
-								log = UI::get().get_element<UIQuestLog>();
-							}
-							if (log)
-								log->load_quests();
-						});
+								if (!yes)
+									return;
+								auto log = UI::get().get_element<UIQuestLog>();
+								if (!log)
+								{
+									UI::get().emplace<UIQuestLog>(
+										Stage::get().get_player().get_quests());
+									log = UI::get().get_element<UIQuestLog>();
+								}
+								if (log)
+									log->load_quests();
+							});
 				}
 			}
 			else if (status == 2)
@@ -228,26 +229,27 @@ namespace ms
 				nl::node info = nl::nx::quest["QuestInfo.img"][std::to_string(qid)];
 				if (info)
 					qname = info["name"].get_string();
-				if (qname.empty())
-					qname = "Quest #" + std::to_string(qid);
 
-				Notifications::notify(
-					"Quest Completed",
-					qname,
-					[qid](bool yes)
-					{
-						if (!yes)
-							return;
-						auto log = UI::get().get_element<UIQuestLog>();
-						if (!log)
+				// Cosmic also completes internal quest slots with no QuestInfo
+				// name. The stock client does not list these as quests.
+				if (!qname.empty())
+					Notifications::notify(
+						"Quest Completed",
+						qname,
+						[qid](bool yes)
 						{
-							UI::get().emplace<UIQuestLog>(
-								Stage::get().get_player().get_quests());
-							log = UI::get().get_element<UIQuestLog>();
-						}
-						if (log)
-							log->focus_completed_quest(qid);
-					});
+							if (!yes)
+								return;
+							auto log = UI::get().get_element<UIQuestLog>();
+							if (!log)
+							{
+								UI::get().emplace<UIQuestLog>(
+									Stage::get().get_player().get_quests());
+								log = UI::get().get_element<UIQuestLog>();
+							}
+							if (log)
+								log->focus_completed_quest(qid);
+						});
 			}
 
 			// Refresh NPC quest marks after any quest state change
