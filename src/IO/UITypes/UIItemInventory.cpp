@@ -923,7 +923,10 @@ namespace ms
 			case 0:
 			{
 				if (female)
+				{
+					UI::get().emplace<UIOk>("This equipment is for male characters.", [](bool) {});
 					return false;
+				}
 
 				break;
 			}
@@ -931,7 +934,10 @@ namespace ms
 			case 1:
 			{
 				if (!female)
+				{
+					UI::get().emplace<UIOk>("This equipment is for female characters.", [](bool) {});
 					return false;
+				}
 
 				break;
 			}
@@ -974,8 +980,11 @@ namespace ms
 			i++;
 		else if (reqINT > stats.get_total(EquipStat::Id::INT))
 			i++;
-		else if (reqFAME > stats.get_honor())
-			i++;
+		else if (reqFAME > stats.get_stat(MapleStat::Id::FAME))
+		{
+			UI::get().emplace<UIOk>("You need " + std::to_string(reqFAME) + " fame to equip this item.", [](bool) {});
+			return false;
+		}
 
 		if (i > 0)
 		{

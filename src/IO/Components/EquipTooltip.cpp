@@ -57,6 +57,7 @@ namespace ms
 		requirements.push_back(MapleStat::Id::DEX);
 		requirements.push_back(MapleStat::Id::INT);
 		requirements.push_back(MapleStat::Id::LUK);
+		requirements.push_back(MapleStat::Id::FAME);
 
 		reqstattextures[MapleStat::Id::LEVEL][false] = EquipCannot["reqLEV"];
 		reqstattextures[MapleStat::Id::LEVEL][true] = EquipCan["reqLEV"];
@@ -76,6 +77,7 @@ namespace ms
 		reqstatpositions[MapleStat::Id::LUK] = Point<int16_t>(177, 62);
 		reqstatpositions[MapleStat::Id::DEX] = Point<int16_t>(97, 71);
 		reqstatpositions[MapleStat::Id::INT] = Point<int16_t>(177, 71);
+		reqstatpositions[MapleStat::Id::FAME] = Point<int16_t>(177, 47);
 
 		reqset[false] = Charset(EquipCannot, Charset::Alignment::LEFT);
 		reqset[true] = Charset(EquipCan, Charset::Alignment::LEFT);
@@ -158,7 +160,10 @@ namespace ms
 
 					for (auto& ms : requirements)
 					{
-						canequip_preview[ms] = stats.get_stat(ms) >= equipdata.get_reqstat(ms);
+						int32_t current = stats.get_stat(ms);
+						if (ms >= MapleStat::Id::STR && ms <= MapleStat::Id::LUK)
+							current = stats.get_total(static_cast<EquipStat::Id>(ms - MapleStat::Id::STR));
+						canequip_preview[ms] = current >= equipdata.get_reqstat(ms);
 						std::string reqstr = std::to_string(equipdata.get_reqstat(ms));
 
 						if (ms != MapleStat::Id::LEVEL)
@@ -371,7 +376,10 @@ namespace ms
 
 		for (auto& ms : requirements)
 		{
-			canequip[ms] = stats.get_stat(ms) >= equipdata.get_reqstat(ms);
+			int32_t current = stats.get_stat(ms);
+			if (ms >= MapleStat::Id::STR && ms <= MapleStat::Id::LUK)
+				current = stats.get_total(static_cast<EquipStat::Id>(ms - MapleStat::Id::STR));
+			canequip[ms] = current >= equipdata.get_reqstat(ms);
 			std::string reqstr = std::to_string(equipdata.get_reqstat(ms));
 
 			if (ms != MapleStat::Id::LEVEL)
@@ -650,6 +658,8 @@ namespace ms
 
 		for (MapleStat::Id ms : requirements)
 		{
+			if (ms == MapleStat::Id::FAME && reqstatstrings[ms] == "000")
+				continue;
 			Point<int16_t> reqpos = reqstatpositions[ms];
 			bool reqok = canequip[ms];
 			reqstattextures[ms][reqok].draw(pos + reqpos);
@@ -788,6 +798,8 @@ namespace ms
 
 		for (MapleStat::Id ms : requirements)
 		{
+			if (ms == MapleStat::Id::FAME && reqstatstrings_preview[ms] == "000")
+				continue;
 			Point<int16_t> reqpos = reqstatpositions[ms];
 			bool reqok = canequip_preview[ms];
 			reqstattextures[ms][reqok].draw(pos + reqpos);

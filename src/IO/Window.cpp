@@ -84,10 +84,10 @@ namespace ms
 		UI::get().send_char(codepoint);
 	}
 
-	std::chrono::time_point<std::chrono::steady_clock> start = ContinuousTimer::get().start();
-
 	void mousekey_callback(GLFWwindow*, int button, int action, int)
 	{
+		static auto last_release = std::chrono::steady_clock::time_point{};
+		static Point<int16_t> last_position;
 		switch (button)
 		{
 		case GLFW_MOUSE_BUTTON_LEFT:
@@ -98,11 +98,20 @@ namespace ms
 				break;
 			case GLFW_RELEASE:
 			{
-				auto diff_ms = ContinuousTimer::get().stop(start) / 1000;
-				start = ContinuousTimer::get().start();
-
-				if (diff_ms > 10 && diff_ms < 200)
+				auto now = std::chrono::steady_clock::now();
+				auto position = UI::get().get_cursor_position();
+				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_release).count();
+				if (elapsed < 400 && std::abs(position.x() - last_position.x()) <= 5 &&
+					std::abs(position.y() - last_position.y()) <= 5)
+				{
 					UI::get().doubleclick();
+					last_release = {};
+				}
+				else
+				{
+					last_release = now;
+					last_position = position;
+				}
 
 				UI::get().send_cursor(false);
 			}

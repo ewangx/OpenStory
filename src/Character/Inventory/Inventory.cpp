@@ -42,8 +42,8 @@ namespace ms
 			{
 				const Equip& equip = equip_iter->second;
 
-				for (auto stat_iter : totalstats)
-					stat_iter.second += equip.get_stat(stat_iter.first);
+				for (auto stat : EquipStat::values)
+					totalstats[stat] += equip.get_stat(stat);
 			}
 		}
 

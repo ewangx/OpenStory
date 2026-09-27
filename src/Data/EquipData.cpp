@@ -39,6 +39,7 @@ namespace ms
 		reqstats[MapleStat::Id::DEX] = src["reqDEX"];
 		reqstats[MapleStat::Id::INT] = src["reqINT"];
 		reqstats[MapleStat::Id::LUK] = src["reqLUK"];
+		reqstats[MapleStat::Id::FAME] = src["reqPOP"];
 		defstats[EquipStat::Id::STR] = src["incSTR"];
 		defstats[EquipStat::Id::DEX] = src["incDEX"];
 		defstats[EquipStat::Id::INT] = src["incINT"];
