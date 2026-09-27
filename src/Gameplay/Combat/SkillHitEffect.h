@@ -21,6 +21,8 @@
 
 #include "../../Template/BoolPair.h"
 
+#include <vector>
+
 namespace ms
 {
 	// Interface for hit effects, animations applied to a mob for each hit.
@@ -119,5 +121,23 @@ namespace ms
 
 	private:
 		std::map<int32_t, Effect> effects;
+	};
+
+	// Each hit shows the next animation in turn, wrapping around.
+	// Used by skills such as Chief Bandit's Band of Thieves (4211004),
+	// whose Skill.wz `hit` node holds one animation per target
+	// (hit/0 .. hit/5) instead of per-weapon variants, so that every
+	// mob in a cast is struck by a different thief rather than all of
+	// them showing the same one.
+	class CyclingHitEffect : public SkillHitEffect
+	{
+	public:
+		CyclingHitEffect(nl::node src);
+
+		void apply(const AttackUser& user, Mob& target) const override;
+
+	private:
+		std::vector<Effect> effects;
+		mutable size_t cursor = 0;
 	};
 }

@@ -101,4 +101,18 @@ namespace ms
 		if (iter != effects.end())
 			iter->second.apply(target, user.flip);
 	}
+
+	CyclingHitEffect::CyclingHitEffect(nl::node src)
+	{
+		for (int32_t i = 0; src["hit"][std::to_string(i)].size() > 0; i++)
+			effects.emplace_back(src["hit"][std::to_string(i)]);
+	}
+
+	void CyclingHitEffect::apply(const AttackUser& user, Mob& target) const
+	{
+		if (effects.empty())
+			return;
+
+		effects[cursor++ % effects.size()].apply(target, user.flip);
+	}
 }
