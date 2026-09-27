@@ -23,6 +23,7 @@
 #include "../Components/MapleButton.h"
 #include "../Components/ChatBalloon.h"
 #include "UIStatusBar.h"
+#include "UIGMLookup.h"
 
 #include "../Notifications.h"
 
@@ -31,6 +32,7 @@
 #include "../../Net/Packets/MessagingPackets.h"
 #include "../../Audio/Audio.h"
 #include "../../Constants.h"
+#include "../../Configuration.h"
 #include "../../Gameplay/Stage.h"
 #include "../../Character/Party.h"
 
@@ -156,7 +158,14 @@ namespace ms
 					return;
 				}
 
-				if (!handle_party_command(msg))
+				if (lowercase(msg) == "/gmlookup")
+				{
+					if (Configuration::get().get_admin())
+						UI::get().emplace<UIGMLookup>();
+					else
+						chat::log("GM lookup is available to GMs only.", chat::LineType::YELLOW);
+				}
+				else if (!handle_party_command(msg))
 					send_chat_message(msg);
 
 				lastentered.push_back(msg);

@@ -20,6 +20,12 @@
 - Storage, buddy list, skill macros, gamepad support
 - Distance-based (spatial) sound for world events
 - Fullscreen, UI scaling, drag-and-drop windows
+- GM-only local map/item ID lookup: type `/gmlookup` in chat, search by name or ID,
+  switch between Maps and Items (which show their inventory icons), and click a result
+  to copy its ID. Use Warp on a map, or set a quantity and use Drop on an item
+  (Cosmic requires GM level 2 for these commands). Equipment and pets drop one at
+  a time; Cosmic interprets a pet's quantity argument as expiration days, so the
+  UI uses one day.
 
 ### Text & input
 

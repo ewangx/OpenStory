@@ -105,6 +105,7 @@ namespace ms
 		// one confirms this account is a GM — give the character the GM name
 		// plate (the login admin flag is unreliable on this server).
 		Stage::get().get_player().apply_nametag_style(true);
+		Configuration::get().set_admin(true);
 
 		if (!recv.available())
 			return;
