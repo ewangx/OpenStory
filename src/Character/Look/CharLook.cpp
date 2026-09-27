@@ -497,6 +497,7 @@ namespace ms
 			case Weapon::Type::STAFF:
 				attacktype = 6;
 				break;
+			case Weapon::Type::CLAW:
 			case Weapon::Type::KNUCKLE:
 				attacktype = 7;
 				break;

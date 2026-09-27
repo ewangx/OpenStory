@@ -27,6 +27,8 @@
 #include "../../Character/Player.h"
 #include "../../Template/TimedQueue.h"
 
+#include <memory>
+
 namespace ms
 {
 	class Combat
@@ -38,6 +40,8 @@ namespace ms
 		void draw(double viewx, double viewy, float alpha) const;
 		// Poll attacks, damage effects, etc.
 		void update();
+		// Drop projectiles and unsent attacks when leaving a map.
+		void clear();
 
 		// Make the player use a special move
 		void use_move(int32_t move_id);
@@ -71,11 +75,18 @@ namespace ms
 			int32_t move_id;
 		};
 
+		struct PendingAttack
+		{
+			AttackResult result;
+			size_t remaining = 0;
+		};
+
 		struct BulletEffect
 		{
 			DamageEffect damageeffect;
 			Bullet bullet;
 			Point<int16_t> target;
+			std::shared_ptr<PendingAttack> pending;
 		};
 
 		void apply_attack(const AttackResult& attack);
@@ -91,8 +102,10 @@ namespace ms
 		// small upward pop, only usable while airborne.
 		void apply_flash_jump();
 		void apply_bullet_effect(const BulletEffect& effect);
+		void finish_bullet(const BulletEffect& effect);
 		void apply_damage_effect(const DamageEffect& effect);
-		void extract_effects(const Char& user, const SpecialMove& move, const AttackResult& result);
+		void extract_effects(const Char& user, const SpecialMove& move, const AttackResult& result,
+			const std::shared_ptr<PendingAttack>& pending = {});
 		std::vector<DamageNumber> place_numbers(int32_t oid, const std::vector<std::pair<int32_t, bool>>& damagelines);
 		const SpecialMove& get_move(int32_t move_id);
 

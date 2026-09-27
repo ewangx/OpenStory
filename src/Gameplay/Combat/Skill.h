@@ -54,7 +54,6 @@ namespace ms
 		std::unique_ptr<SkillHitEffect> hiteffect;
 
 		int32_t skillid;
-		bool overregular;
 		bool projectile;
 	};
 }

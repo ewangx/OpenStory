@@ -82,6 +82,7 @@ namespace ms
 	{
 		MiniRooms::get().clear_all();
 		HiredMerchants::get().clear_all();
+		combat.clear();
 		state = State::INACTIVE;
 
 		chars.clear();

@@ -42,7 +42,6 @@ namespace ms
 		nl::node src = nl::nx::skill[jobid + ".img"]["skill"][strid];
 
 		projectile = true;
-		overregular = false;
 
 		sound = std::make_unique<SingleSkillSound>(strid);
 
@@ -114,14 +113,21 @@ namespace ms
 			hiteffect = std::make_unique<NoHitEffect>();
 		}
 
+		bool hasaction = src["action"].data_type() == nl::node::type::string;
 		bool hasaction0 = src["action"]["0"].data_type() == nl::node::type::string;
 		bool hasaction1 = src["action"]["1"].data_type() == nl::node::type::string;
 
-		if (hasaction0 && hasaction1)
+		if (skillid == SkillId::LUCKY_SEVEN || skillid == SkillId::NIGHT_WALKER_LUCKY_SEVEN)
+		{
+			// The stars' skill effect does not animate the character; use the
+			// claw's regular throwing stance for both versions of Lucky Seven.
+			action = std::make_unique<RegularAction>();
+		}
+		else if (hasaction0 && hasaction1)
 		{
 			action = std::make_unique<TwoHandedAction>(src);
 		}
-		else if (hasaction0)
+		else if (hasaction || hasaction0)
 		{
 			action = std::make_unique<SingleAction>(src);
 		}
@@ -136,7 +142,6 @@ namespace ms
 			else
 			{
 				action = std::make_unique<RegularAction>();
-				overregular = true;
 			}
 		}
 		else
@@ -206,7 +211,7 @@ namespace ms
 		switch (attack.type)
 		{
 		case Attack::RANGED:
-			attack.hitcount = stats.bulletcount;
+			attack.hitcount = skillid == SkillId::NIGHT_WALKER_VAMPIRE ? stats.attackcount : stats.bulletcount;
 			break;
 		default:
 			attack.hitcount = stats.attackcount;
@@ -215,6 +220,11 @@ namespace ms
 
 		if (!stats.range.empty())
 			attack.range = stats.range;
+		else if (attack.type == Attack::CLOSE && !projectile)
+			attack.range = user.get_afterimage().get_range();
+
+		if (skillid == SkillId::NIGHT_WALKER_VAMPIRE || skillid == SkillId::NINJA_STORM)
+			attack.bullet = 0; // These ranged skills do not throw visible stars.
 
 		if (projectile && !attack.bullet)
 		{
@@ -240,13 +250,7 @@ namespace ms
 			}
 		}
 
-		if (overregular)
-		{
-			attack.stance = user.get_look().get_stance();
-
-			if (attack.type == Attack::CLOSE && !projectile)
-				attack.range = user.get_afterimage().get_range();
-		}
+		attack.stance = user.get_look().get_stance();
 	}
 
 	void Skill::apply_hiteffects(const AttackUser& user, Mob& target) const
@@ -303,6 +307,8 @@ namespace ms
 		case Weapon::CROSSBOW:
 		case Weapon::CLAW:
 		case Weapon::GUN:
+			if (skillid == SkillId::NIGHT_WALKER_VAMPIRE)
+				return FBR_NONE;
 			return (bullets >= stats.bulletcost) ? FBR_NONE : FBR_BULLETCOST;
 		default:
 			return FBR_NONE;

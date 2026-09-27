@@ -152,7 +152,29 @@ namespace ms
 			// No data for this skill level
 			{ SkillId::FIRE_DEMON, ATTACK },
 			{ SkillId::PARALYZE, ATTACK | RANGED },
-			{ SkillId::METEOR_SHOWER, ATTACK }
+			{ SkillId::METEOR_SHOWER, ATTACK },
+			// Rogue / Assassin / Bandit
+			{ SkillId::DOUBLE_STAB, ATTACK },
+			{ SkillId::LUCKY_SEVEN, ATTACK | RANGED },
+			{ SkillId::DRAIN, ATTACK | RANGED },
+			{ SkillId::STEAL, ATTACK },
+			{ SkillId::SAVAGE_BLOW, ATTACK },
+			// Hermit / Chief Bandit
+			{ SkillId::AVENGER, ATTACK | RANGED },
+			{ SkillId::ASSAULTER, ATTACK },
+			{ SkillId::BAND_OF_THIEVES, ATTACK },
+			// Night Lord / Shadower
+			{ SkillId::NIGHT_LORD_TAUNT, ATTACK | RANGED },
+			{ SkillId::TRIPLE_THROW, ATTACK | RANGED },
+			{ SkillId::NINJA_STORM, ATTACK | RANGED },
+			{ SkillId::ASSASSINATE, ATTACK },
+			{ SkillId::SHADOWER_TAUNT, ATTACK | RANGED },
+			{ SkillId::BOOMERANG_STEP, ATTACK },
+			// Night Walker
+			{ SkillId::NIGHT_WALKER_LUCKY_SEVEN, ATTACK | RANGED },
+			{ SkillId::NIGHT_WALKER_VAMPIRE, ATTACK | RANGED },
+			{ SkillId::NIGHT_WALKER_AVENGER, ATTACK | RANGED },
+			{ SkillId::NIGHT_WALKER_TRIPLE_THROW, ATTACK | RANGED }
 		};
 
 		auto iter = skill_flags.find(id);

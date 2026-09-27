@@ -72,13 +72,19 @@ namespace ms
 					bool apply = mb.bullet.update(mb.target);
 
 					if (apply)
+					{
 						apply_damage_effect(mb.damageeffect);
+						finish_bullet(mb);
+					}
 
 					return apply;
 				}
 				else
 				{
-					return mb.bullet.update(mb.target);
+					bool arrived = mb.bullet.update(mb.target);
+					if (arrived)
+						finish_bullet(mb);
+					return arrived;
 				}
 			}
 		);
@@ -89,6 +95,15 @@ namespace ms
 				return dn.update();
 			}
 		);
+	}
+
+	void Combat::clear()
+	{
+		attackresults.clear();
+		bulleteffects.clear();
+		damageeffects.clear();
+		bullets.clear();
+		damagenumbers.clear();
 	}
 
 	void Combat::use_move(int32_t move_id)
@@ -119,6 +134,8 @@ namespace ms
 		if (move.is_attack())
 		{
 			Attack attack = player.prepare_attack(move.is_skill());
+			if (move.get_id() == SkillId::NIGHT_WALKER_VAMPIRE || move.get_id() == SkillId::SHADOWER_TAUNT)
+				attack.type = Attack::RANGED; // Cosmic handles these via the ranged attack packet.
 
 			move.apply_useeffects(player);
 			move.apply_actions(player, attack.type);
@@ -162,12 +179,20 @@ namespace ms
 
 			mobs.send_attack(result, attack, mob_targets, mobcount);
 			result.attacker = player.get_oid();
-			extract_effects(player, move, result);
+
+			// Cosmic applies the damage (and can kill the mob) as soon as it
+			// receives this packet. Hold targeted ranged projectiles until their
+			// last visual hit, rather than killing the mob mid-flight.
+			std::shared_ptr<PendingAttack> pending;
+			if (result.type == Attack::RANGED && result.bullet && result.mobcount)
+				pending = std::make_shared<PendingAttack>(PendingAttack{ result });
+			extract_effects(player, move, result, pending);
 
 			apply_use_movement(move);
 			apply_result_movement(move, result);
 
-			AttackPacket(result).dispatch();
+			if (!pending || pending->remaining == 0)
+				AttackPacket(result).dispatch();
 
 			if (reactor_targets.size())
 				if (Optional<Reactor> reactor = reactor_objs->get(reactor_targets.at(0)))
@@ -409,9 +434,17 @@ namespace ms
 
 		if (bullets.back().bullet.settarget(effect.target))
 		{
-			apply_damage_effect(effect.damageeffect);
+			if (mobs.contains(effect.damageeffect.target_oid))
+				apply_damage_effect(effect.damageeffect);
+			finish_bullet(bullets.back());
 			bullets.pop_back();
 		}
+	}
+
+	void Combat::finish_bullet(const BulletEffect& effect)
+	{
+		if (effect.pending && --effect.pending->remaining == 0)
+			AttackPacket(effect.pending->result).dispatch();
 	}
 
 	void Combat::apply_damage_effect(const DamageEffect& effect)
@@ -472,7 +505,8 @@ namespace ms
 		}
 	}
 
-	void Combat::extract_effects(const Char& user, const SpecialMove& move, const AttackResult& result)
+	void Combat::extract_effects(const Char& user, const SpecialMove& move, const AttackResult& result,
+		const std::shared_ptr<PendingAttack>& pending)
 	{
 		AttackUser attackuser = {
 			user.get_skilllevel(move.get_id()),
@@ -511,7 +545,9 @@ namespace ms
 							move.get_id()
 						};
 
-						bulleteffects.emplace(user.get_attackdelay(i), std::move(effect), bullet, head);
+						bulleteffects.emplace(user.get_attackdelay(i), std::move(effect), bullet, head, pending);
+						if (pending)
+							pending->remaining++;
 						i++;
 					}
 				}
@@ -525,7 +561,7 @@ namespace ms
 				for (uint8_t i = 0; i < result.hitcount; i++)
 				{
 					DamageEffect effect{ attackuser, {}, 0, false, 0, 0 };
-					bulleteffects.emplace(user.get_attackdelay(i), std::move(effect), bullet, target);
+					bulleteffects.emplace(user.get_attackdelay(i), std::move(effect), bullet, target, pending);
 				}
 			}
 		}

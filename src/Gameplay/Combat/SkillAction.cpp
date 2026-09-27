@@ -44,7 +44,8 @@ namespace ms
 
 	SingleAction::SingleAction(nl::node src)
 	{
-		action = (std::string)src["action"]["0"];
+		nl::node actionnode = src["action"];
+		action = (std::string)(actionnode.data_type() == nl::node::type::string ? actionnode : actionnode["0"]);
 	}
 
 	void SingleAction::apply(Char& target, Attack::Type) const

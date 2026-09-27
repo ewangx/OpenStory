@@ -60,6 +60,12 @@ namespace ms
 			}
 		}
 
+		void clear()
+		{
+			while (!queue.empty())
+				queue.pop();
+		}
+
 	private:
 		struct Timed
 		{
