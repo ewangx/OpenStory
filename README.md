@@ -26,6 +26,11 @@
   (Cosmic requires GM level 2 for these commands). Equipment and pets drop one at
   a time; Cosmic interprets a pet's quantity argument as expiration days, so the
   UI uses one day.
+- GMs can type `/` in chat for command suggestions with usage and descriptions.
+  Keep typing to filter by command name or description, use Up/Down to cycle
+  through all matches, and Tab, Enter, or click to complete.
+  Enter again sends the command; slash-prefixed GM commands are translated to
+  Cosmic's `!` syntax.
 
 ### Text & input
 

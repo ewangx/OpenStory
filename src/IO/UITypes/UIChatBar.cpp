@@ -83,6 +83,179 @@ namespace ms
 			catch (...) { return false; }
 			return true;
 		}
+
+		// Keep the names in sync with Cosmic's CommandsExecutor registrations.
+		// Cosmic accepts GM commands with '!', while the chat UI offers '/' completion.
+		struct CommandInfo
+		{
+			const char* name;
+			const char* arguments;
+			const char* description;
+		};
+
+		// Argument forms and descriptions follow Cosmic's command implementations.
+		// An empty argument list means the command is invoked by name alone.
+		constexpr CommandInfo GM_COMMANDS[] = {
+			{ "whatdropsfrom", "<monster name>", "Show items dropped by a monster." },
+			{ "whodrops", "<item name>", "Show monsters that drop an item." },
+			{ "buffme", "", "Apply GM buffs to yourself." },
+			{ "goto", "<map name>", "Warp to a predefined map." },
+			{ "recharge", "", "Recharge and refill USE items." },
+			{ "whereami", "", "Show objects on the current map." },
+			{ "hide", "", "Hide from other players." },
+			{ "unhide", "", "Toggle GM hide." },
+			{ "sp", "[player] <amount>", "Set available SP." },
+			{ "ap", "[player] <amount>", "Set available AP." },
+			{ "empowerme", "", "Apply useful buffs to yourself." },
+			{ "buffmap", "", "Give GM buffs to the whole map." },
+			{ "buff", "<buffid>", "Activate a buff." },
+			{ "bomb", "[player]", "Spawn a bomb on yourself or a player." },
+			{ "dc", "<player>", "Disconnect a player." },
+			{ "cleardrops", "", "Clear your drops on the map." },
+			{ "clearslot", "<inventory tab>", "Clear an inventory tab." },
+			{ "clearsavelocs", "[player]", "Clear saved warp locations." },
+			{ "warp", "<mapid>", "Warp to a map by ID." },
+			{ "warphere", "<player>", "Bring a player to your location." },
+			{ "summon", "<player>", "Bring a player to your location." },
+			{ "warpto", "<player>", "Warp to a player." },
+			{ "reach", "<player>", "Warp to a player." },
+			{ "follow", "<player>", "Warp to a player." },
+			{ "gmshop", "", "Open the GM shop." },
+			{ "heal", "", "Fully restore your HP and MP." },
+			{ "item", "<itemid> <quantity>", "Create an item in your inventory." },
+			{ "drop", "<itemid> <quantity>", "Drop an item on the ground." },
+			{ "level", "<level>", "Set your level." },
+			{ "levelpro", "<level>", "Level up to the target level." },
+			{ "setslot", "<slots>", "Set inventory slots in all tabs." },
+			{ "setstat", "<value>", "Set all primary stats." },
+			{ "maxstat", "", "Max out character stats." },
+			{ "maxskill", "", "Max out job skills." },
+			{ "resetskill", "", "Reset all skill levels." },
+			{ "search", "<type> <name>", "Search String.wz by type and name." },
+			{ "maplist", "[page] [filter]", "List map names and IDs." },
+			{ "jail", "<player> [minutes]", "Send a player to jail." },
+			{ "unjail", "<player>", "Free a player from jail." },
+			{ "job", "<jobid> [player]", "Change a player's job." },
+			{ "unbug", "", "Unbug your character." },
+			{ "id", "<type> <query>", "Search the handbook for IDs." },
+			{ "gachalist", "", "Show gachapon rewards." },
+			{ "loot", "", "Pick up items that belong to you." },
+			{ "mobskill", "<skillid> <level>", "Apply a skill to all mobs on the map." },
+			{ "debuff", "<effect>", "Debuff nearby players." },
+			{ "fly", "<on/off>", "Enable or disable flying." },
+			{ "spawn", "<mobid> [quantity]", "Spawn mobs at your location." },
+			{ "mutemap", "", "Toggle map-wide chat mute." },
+			{ "checkdmg", "<player>", "Show a player's stats and damage." },
+			{ "inmap", "", "List players on the map." },
+			{ "reloadevents", "", "Reload event data." },
+			{ "reloaddrops", "", "Reload drop data." },
+			{ "reloadportals", "", "Reload portal scripts." },
+			{ "reloadmap", "", "Reload the current map." },
+			{ "reloadshops", "", "Reload NPC and popup shops." },
+			{ "hpmp", "[player] <value>", "Set a player's HP and MP." },
+			{ "maxhpmp", "[player] <value>", "Set a player's base HP and MP." },
+			{ "music", "<song>", "Play a song." },
+			{ "monitor", "<player>", "Toggle packet monitoring of a player." },
+			{ "monitors", "", "List monitored characters." },
+			{ "ignore", "<player>", "Toggle ignored auto-ban alerts." },
+			{ "ignored", "", "List ignored auto-ban alerts." },
+			{ "pos", "", "Show your position and foothold." },
+			{ "togglecoupon", "<itemid>", "Toggle availability of a coupon." },
+			{ "togglewhitechat", "", "Toggle white GM chat." },
+			{ "fame", "<player> <amount>", "Change a player's fame." },
+			{ "givenx", "[nx|mp|np] [player] <amount>", "Give NX to a player." },
+			{ "givevp", "<player> <amount>", "Give vote points to a player." },
+			{ "givems", "[player] <amount>", "Give mesos to a player." },
+			{ "giverp", "<player> <amount>", "Give reward points to a player." },
+			{ "expeds", "", "List active boss expeditions." },
+			{ "kill", "<player>", "Kill a player." },
+			{ "seed", "", "Drop seeds for Henesys PQ." },
+			{ "maxenergy", "", "Max out dojo energy." },
+			{ "killall", "", "Kill all mobs on the map." },
+			{ "notice", "<message>", "Broadcast a blue server notice." },
+			{ "rip", "<message>", "Broadcast a RIP notice." },
+			{ "openportal", "<portalid>", "Open a map portal." },
+			{ "closeportal", "<portalid>", "Close a map portal." },
+			{ "pe", "", "Process a packet from server-side pe.txt." },
+			{ "startevent", "", "Start an event on this map." },
+			{ "endevent", "", "Close entry to the current event." },
+			{ "startmapevent", "", "Start a classic map event." },
+			{ "stopmapevent", "", "Stop a classic map event." },
+			{ "online2", "", "List online players." },
+			{ "ban", "<player> <reason>", "Ban a player." },
+			{ "unban", "<player>", "Unban a player." },
+			{ "healmap", "", "Heal all players on this map." },
+			{ "healperson", "<player>", "Heal a player's HP and MP." },
+			{ "hurt", "<player>", "Nearly kill a player." },
+			{ "killmap", "", "Kill all players on the map." },
+			{ "night", "", "Darken the sky background." },
+			{ "npc", "<npcid>", "Spawn an NPC at your location." },
+			{ "face", "[player] <faceid>", "Change a player's face." },
+			{ "hair", "[player] <hairid>", "Change a player's hair." },
+			{ "startquest", "<questid>", "Start a quest." },
+			{ "completequest", "<questid>", "Complete an active quest." },
+			{ "resetquest", "<questid>", "Reset a completed quest." },
+			{ "timer", "<player> <seconds|remove>", "Set a player's map timer." },
+			{ "timermap", "<seconds|remove>", "Set a timer for everyone on this map." },
+			{ "timerall", "<seconds|remove>", "Set a server-wide timer." },
+			{ "warpmap", "<mapid>", "Warp everyone on this map." },
+			{ "warparea", "<mapid>", "Warp nearby players to another map." },
+			{ "servermessage", "<message>", "Set the scrolling server message." },
+			{ "proitem", "<itemid> <stats> [speed/jump]", "Create an item with custom stats." },
+			{ "seteqstat", "<stats> [speed/jump]", "Set stats of inventory equipment." },
+			{ "exprate", "<rate>", "Set the world EXP rate." },
+			{ "mesorate", "<rate>", "Set the world meso rate." },
+			{ "droprate", "<rate>", "Set the world drop rate." },
+			{ "bossdroprate", "<rate>", "Set the boss drop rate." },
+			{ "questrate", "<rate>", "Set the world quest rate." },
+			{ "travelrate", "<rate>", "Set the world travel rate." },
+			{ "fishrate", "<rate>", "Set the fishing rate." },
+			{ "itemvac", "", "Loot all drops on the map." },
+			{ "forcevac", "", "Loot all drops on the map." },
+			{ "zakum", "", "Spawn Zakum at your location." },
+			{ "horntail", "", "Spawn Horntail at your location." },
+			{ "pinkbean", "", "Spawn Pink Bean at your location." },
+			{ "pap", "", "Spawn Papulatus at your location." },
+			{ "pianus", "", "Spawn Pianus at your location." },
+			{ "cake", "[hp]", "Spawn Cake boss, optionally with custom HP." },
+			{ "playernpc", "<player>", "Spawn a player NPC." },
+			{ "playernpcremove", "<player>", "Remove a player NPC." },
+			{ "pnpc", "<npcid>", "Spawn a permanent NPC." },
+			{ "pnpcremove", "[npcid]", "Remove a permanent NPC on the map." },
+			{ "pmob", "<mobid> [time]", "Spawn a permanent mob." },
+			{ "pmobremove", "[mobid]", "Remove permanent mobs of this type." },
+			{ "debug", "<type>", "Show a debug message." },
+			{ "set", "[values...]", "Store debug values in an array." },
+			{ "showpackets", "", "Toggle received packet logging." },
+			{ "showmovelife", "", "Toggle move-life console logging." },
+			{ "showsessions", "", "Show online sessions." },
+			{ "iplist", "", "List player IP addresses." },
+			{ "setgmlevel", "<player> <level>", "Set a player's GM level." },
+			{ "warpworld", "<worldid>", "Warp to a different world." },
+			{ "saveall", "", "Save all characters." },
+			{ "dcall", "", "Disconnect all players." },
+			{ "mapplayers", "", "List players on the map." },
+			{ "getacc", "<player>", "Show a player's account name." },
+			{ "shutdown", "[time|NOW]", "Shut down the server." },
+			{ "clearquestcache", "", "Clear the quest cache." },
+			{ "clearquest", "<questid>", "Clear one quest from cache." },
+			{ "supplyratecoupon", "<yes|no>", "Set Cash Shop coupon availability." },
+			{ "spawnallpnpcs", "", "Spawn all player NPCs." },
+			{ "eraseallpnpcs", "", "Remove all player NPCs." },
+			{ "addchannel", "<worldid>", "Add a channel to a world." },
+			{ "addworld", "", "Add a new world." },
+			{ "removechannel", "<worldid>", "Remove a channel from a world." },
+			{ "removeworld", "", "Remove the last world." },
+			{ "devtest", "", "Run the server's devtest script." }
+		};
+
+		bool is_gm_command(const std::string& name)
+		{
+			for (const auto& command : GM_COMMANDS)
+				if (command.name == name)
+					return true;
+			return false;
+		}
 	}
 
 	UIChatBar::UIChatBar(Point<int16_t> pos) : UIElement(pos, Point<int16_t>(500, 60))
@@ -151,6 +324,13 @@ namespace ms
 			[&](std::string msg)
 			{
 				msg = trim(msg);
+				refresh_command_suggestions();
+				if (!command_suggestions.empty() && suggestion_selected < static_cast<int16_t>(command_suggestions.size())
+					&& lowercase(msg) != command_suggestions[suggestion_selected].name)
+				{
+					accept_command_suggestion();
+					return;
+				}
 				if (msg.empty())
 				{
 					// Empty Enter minimizes the whole chat window.
@@ -166,7 +346,14 @@ namespace ms
 						chat::log("GM lookup is available to GMs only.", chat::LineType::YELLOW);
 				}
 				else if (!handle_party_command(msg))
-					send_chat_message(msg);
+				{
+					std::string command = lowercase(msg.substr(0, msg.find(' ')));
+					if (Configuration::get().get_admin() && command.size() > 1
+						&& command[0] == '/' && is_gm_command(command.substr(1)))
+						GeneralChatPacket("!" + msg.substr(1), true).dispatch();
+					else
+						send_chat_message(msg);
+				}
 
 				lastentered.push_back(msg);
 				lastpos = lastentered.size();
@@ -178,6 +365,12 @@ namespace ms
 			KeyAction::Id::UP,
 			[&]()
 			{
+				refresh_command_suggestions();
+				if (!command_suggestions.empty())
+				{
+					cycle_command_suggestion(false);
+					return;
+				}
 				if (lastpos > 0)
 				{
 					lastpos--;
@@ -190,6 +383,12 @@ namespace ms
 			KeyAction::Id::DOWN,
 			[&]()
 			{
+				refresh_command_suggestions();
+				if (!command_suggestions.empty())
+				{
+					cycle_command_suggestion(true);
+					return;
+				}
 				if (lastentered.size() > 0 && lastpos < lastentered.size() - 1)
 				{
 					lastpos++;
@@ -199,10 +398,25 @@ namespace ms
 		);
 
 		chatfield.set_key_callback(
+			KeyAction::Id::TAB,
+			[&]()
+			{
+				refresh_command_suggestions();
+				accept_command_suggestion();
+			}
+		);
+
+		chatfield.set_key_callback(
 			KeyAction::Id::ESCAPE,
 			[&]()
 			{
-				toggle_chatfield(false);
+				if (!command_suggestions.empty())
+				{
+					suggestion_dismissed = true;
+					command_suggestions.clear();
+				}
+				else
+					toggle_chatfield(false);
 			}
 		);
 
@@ -231,6 +445,7 @@ namespace ms
 		if (!open)
 		{
 			chatfieldopen = false;
+			command_suggestions.clear();
 			emoticons_open = false;
 			chatfield.set_state(Textfield::State::DISABLED);
 		}
@@ -323,6 +538,89 @@ namespace ms
 
 		chatfieldopen = true;
 		chatfield.set_state(Textfield::State::FOCUSED);
+	}
+
+	void UIChatBar::refresh_command_suggestions()
+	{
+		const std::string query = lowercase(chatfield.get_text());
+		if (query == suggestion_query && !command_suggestions.empty()
+			&& chatopen && chatfieldopen && chatfield.get_state() == Textfield::State::FOCUSED
+			&& Configuration::get().get_admin())
+			return;
+
+		if (query != suggestion_query)
+		{
+			suggestion_query = query;
+			suggestion_dismissed = false;
+			suggestion_selected = 0;
+			suggestion_first = 0;
+		}
+
+		command_suggestions.clear();
+		if (!chatopen || !chatfieldopen || chatfield.get_state() != Textfield::State::FOCUSED
+			|| !Configuration::get().get_admin() || suggestion_dismissed
+			|| query.empty() || query[0] != '/' || query.find(' ') != std::string::npos)
+			return;
+
+		const auto add = [&](const std::string& name, const std::string& arguments,
+			const std::string& description)
+		{
+			if (name.compare(0, query.size(), query) == 0
+				|| lowercase(description).find(query.substr(1)) != std::string::npos)
+				command_suggestions.push_back({ name,
+					name + (arguments.empty() ? "" : " " + arguments), description });
+		};
+
+		add("/gmlookup", "", "Search map and item names or IDs.");
+		for (const auto& command : GM_COMMANDS)
+			add("/" + std::string(command.name), command.arguments, command.description);
+	}
+
+	void UIChatBar::cycle_command_suggestion(bool down)
+	{
+		const int16_t count = static_cast<int16_t>(command_suggestions.size());
+		if (count == 0)
+			return;
+
+		suggestion_selected = down ? (suggestion_selected + 1) % count
+			: (suggestion_selected + count - 1) % count;
+		if (suggestion_selected < suggestion_first)
+			suggestion_first = suggestion_selected;
+		else if (suggestion_selected >= suggestion_first + visible_command_suggestions())
+			suggestion_first = suggestion_selected - visible_command_suggestions() + 1;
+	}
+
+	int16_t UIChatBar::visible_command_suggestions() const
+	{
+		return std::min<int16_t>(SUGGESTION_ROWS, static_cast<int16_t>(command_suggestions.size()));
+	}
+
+	void UIChatBar::accept_command_suggestion()
+	{
+		if (command_suggestions.empty())
+			return;
+
+		chatfield.change_text(command_suggestions[suggestion_selected].name + " ");
+		refresh_command_suggestions();
+	}
+
+	Point<int16_t> UIChatBar::command_suggestion_origin() const
+	{
+		return position + Point<int16_t>(-435,
+			-63 - visible_command_suggestions() * SUGGESTION_HEIGHT);
+	}
+
+	int16_t UIChatBar::command_suggestion_at(Point<int16_t> cursorpos) const
+	{
+		if (command_suggestions.empty())
+			return -1;
+
+		Point<int16_t> origin = command_suggestion_origin();
+		Rectangle<int16_t> bounds(origin, origin + Point<int16_t>(SUGGESTION_WIDTH,
+			visible_command_suggestions() * SUGGESTION_HEIGHT));
+		int16_t row = (cursorpos.y() - origin.y()) / SUGGESTION_HEIGHT;
+		return bounds.contains(cursorpos) && row >= 0 && row < visible_command_suggestions()
+			? suggestion_first + row : -1;
 	}
 
 	void UIChatBar::draw(float inter) const
@@ -470,6 +768,24 @@ namespace ms
 
 			chatcover.draw(position);
 			chatfield.draw(position);
+
+			if (!command_suggestions.empty())
+			{
+				Point<int16_t> origin = command_suggestion_origin();
+				ColorBox(SUGGESTION_WIDTH, visible_command_suggestions() * SUGGESTION_HEIGHT,
+					Color::Name::BLACK, 0.88f).draw(DrawArgument(origin));
+				for (int16_t row_index = 0; row_index < visible_command_suggestions(); ++row_index)
+				{
+					int16_t i = suggestion_first + row_index;
+					Point<int16_t> row = origin + Point<int16_t>(0, row_index * SUGGESTION_HEIGHT);
+					if (i == suggestion_selected)
+						ColorBox(SUGGESTION_WIDTH, SUGGESTION_HEIGHT, Color::Name::WHITE, 0.23f).draw(DrawArgument(row));
+					Text(Text::A12M, Text::LEFT, Color::Name::WHITE, command_suggestions[i].usage, SUGGESTION_WIDTH - 16)
+						.draw(row + Point<int16_t>(8, 2));
+					Text(Text::A11M, Text::LEFT, Color::Name::YELLOW, command_suggestions[i].description, SUGGESTION_WIDTH - 16)
+						.draw(row + Point<int16_t>(8, 19));
+				}
+			}
 		}
 		else if (rowtexts.count(rowmax))
 		{
@@ -481,6 +797,7 @@ namespace ms
 	{
 		UIElement::update();
 		chatfield.update(position);
+		refresh_command_suggestions();
 	}
 
 	void UIChatBar::set_position(Point<int16_t> pos)
@@ -556,6 +873,9 @@ namespace ms
 
 	bool UIChatBar::is_in_range(Point<int16_t> cursorpos) const
 	{
+		if (command_suggestion_at(cursorpos) >= 0)
+			return true;
+
 		if (emoticons_open)
 		{
 			int16_t rows = (Text::emoticon_count() + EMOTE_COLS - 1) / EMOTE_COLS;
@@ -678,6 +998,19 @@ namespace ms
 
 	Cursor::State UIChatBar::send_cursor(bool clicking, Point<int16_t> cursorpos)
 	{
+		int16_t suggestion = command_suggestion_at(cursorpos);
+		if (suggestion >= 0)
+		{
+			if (clicking)
+			{
+				suggestion_selected = suggestion;
+				Sound(Sound::Name::BUTTONCLICK).play();
+				accept_command_suggestion();
+				focus_chatfield();
+			}
+			return Cursor::State::CANCLICK;
+		}
+
 		// The picker sits above the bar and must win over everything under it,
 		// including the chat-log selection drag.
 		if (emoticons_open)
@@ -1026,6 +1359,7 @@ namespace ms
 		}
 		else
 		{
+			command_suggestions.clear();
 			chatfield.set_state(Textfield::State::DISABLED);
 		}
 	}

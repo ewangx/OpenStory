@@ -142,6 +142,12 @@ namespace ms
 		void send_targeted_message(const std::string& target, const std::string& message);
 		void send_party_message(const std::string& message);
 		int16_t getchattop() const;
+		void refresh_command_suggestions();
+		void cycle_command_suggestion(bool down);
+		void accept_command_suggestion();
+		int16_t command_suggestion_at(Point<int16_t> cursorpos) const;
+		Point<int16_t> command_suggestion_origin() const;
+		int16_t visible_command_suggestions() const;
 
 		enum Buttons : uint16_t
 		{
@@ -170,6 +176,20 @@ namespace ms
 		int32_t emoticon_hover = -1;
 		Texture emoticon_frame;
 		std::vector<Texture> emoticon_icons;
+		struct CommandSuggestion
+		{
+			std::string name;
+			std::string usage;
+			std::string description;
+		};
+		std::vector<CommandSuggestion> command_suggestions;
+		std::string suggestion_query;
+		int16_t suggestion_selected = 0;
+		int16_t suggestion_first = 0;
+		bool suggestion_dismissed = false;
+		static constexpr int16_t SUGGESTION_ROWS = 6;
+		static constexpr int16_t SUGGESTION_HEIGHT = 38;
+		static constexpr int16_t SUGGESTION_WIDTH = 420;
 
 		static constexpr int16_t CHATYOFFSET = 65;
 		static constexpr int16_t CHATROWHEIGHT = 16;
