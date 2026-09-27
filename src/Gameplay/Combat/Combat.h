@@ -65,6 +65,10 @@ namespace ms
 		// use-effect or action in Skill.wz, so its animation has to be
 		// substituted explicitly too.
 		static bool is_flash_jump_skill(int32_t skillid);
+		// Aran Combat Step is the grounded counterpart to Flash Jump: a
+		// horizontal dash with no authored displacement, so it needs the
+		// same explicit impulse handling.
+		static bool is_combat_step_skill(int32_t skillid);
 		// Show a buff effect
 		void show_player_buff(int32_t skillid);
 
@@ -105,6 +109,9 @@ namespace ms
 		// Mid-air dash: horizontal impulse in the moving/facing direction with a
 		// small upward pop, only usable while airborne.
 		void apply_flash_jump();
+		// Grounded/airborne dash: horizontal impulse in the moving/facing
+		// direction, usable on the ground unlike Flash Jump.
+		void apply_combat_step();
 		void apply_bullet_effect(const BulletEffect& effect);
 		void finish_bullet(const BulletEffect& effect);
 		void apply_damage_effect(const DamageEffect& effect);

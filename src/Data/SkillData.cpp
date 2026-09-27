@@ -139,6 +139,8 @@ namespace ms
 			{ SkillId::DRAGONS_ROAR, ATTACK },
 			// Dark Knight
 			{ SkillId::RUSH_DK, ATTACK },
+			// Dawn Warrior (Cygnus Rush clone)
+			{ SkillId::SOUL_RUSH, ATTACK },
 			// Mage
 			{ SkillId::ENERGY_BOLT, ATTACK | RANGED },
 			{ SkillId::MAGIC_CLAW, ATTACK | RANGED },

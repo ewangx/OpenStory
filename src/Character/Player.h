@@ -72,7 +72,8 @@ namespace ms
 		// Create an attack struct using the player's stats
 		Attack prepare_attack(bool skill) const;
 
-		// Execute a rush movement
+		// Execute a rush movement (dash to the given x). The dash is
+		// finished by update_dash() once the target is reached.
 		void rush(double targetx);
 
 		// Blink to an absolute map position (Teleport / Flash Jump). Clears
@@ -186,6 +187,17 @@ namespace ms
 
 		Optional<const Ladder> ladder;
 		TimedBool climb_cooldown;
+
+		// Dash-to-target state (Rush / Assaulter / Assassinate / ...).
+		// Ground friction alone can neither guarantee arrival nor stop
+		// exactly on the monster, so update_dash() snaps onto dashtargetx
+		// once crossed and clears the dash (and the edge-guard flag) when
+		// the dash ends or is interrupted.
+		double dashtargetx = 0.0;
+		bool dashing = false;
+		static constexpr uint16_t DASH_DELAY = 50;
+		void update_dash();
+		void finish_dash();
 
 		bool underwater;
 

@@ -39,6 +39,8 @@
 #include <nlnx/bitmap.hpp>
 #endif
 
+#include <cmath>
+
 namespace ms
 {
 	const PlayerNullState nullstate;
@@ -92,6 +94,7 @@ namespace ms
 	void Player::respawn(Point<int16_t> pos, bool uw)
 	{
 		set_position(pos.x(), pos.y());
+		finish_dash();
 		underwater = uw;
 		keysdown.clear();
 		attacking = false;
@@ -225,6 +228,7 @@ namespace ms
 		{
 			pst->update(*this);
 			physics.move_object(phobj);
+			update_dash();
 
 			bool aniend = Char::update(physics, get_stancespeed());
 
@@ -541,17 +545,61 @@ namespace ms
 
 	void Player::rush(double targetx)
 	{
-		if (phobj.onground)
+		if (std::abs(targetx - phobj.crnt_x()) < 1.0)
+			return;
+
+		// Works grounded and airborne alike: mid-air there is no
+		// friction, so the impulse carries until update_dash() snaps onto
+		// the target's x (gravity keeps arcing naturally while dashing).
+		// movexuntil assumes frictionless travel, but ground friction eats
+		// ~13% of hspeed every tick: a duration derived from the (long)
+		// attack animation dies after ~10% of the way — the "sliver".
+		// Drive the dash with a short fixed impulse instead (~1.2x the
+		// distance on flat ground) and let update_dash() snap exactly
+		// onto the target once crossed, so the dash always lands ON the
+		// monster.
+		phobj.movexuntil(targetx, DASH_DELAY);
+		dashtargetx = targetx;
+		dashing = true;
+		phobj.set_flag(PhysicsObject::Flag::TURNATEDGES);
+	}
+
+	void Player::update_dash()
+	{
+		if (!dashing)
+			return;
+
+		double x = phobj.crnt_x();
+		bool crossed = (phobj.hspeed > 0.0 && x >= dashtargetx)
+			|| (phobj.hspeed < 0.0 && x <= dashtargetx);
+
+		if (crossed)
 		{
-			uint16_t delay = get_attackdelay(1);
-			phobj.movexuntil(targetx, delay);
-			phobj.set_flag(PhysicsObject::Flag::TURNATEDGES);
+			// Reached the monster: stop dead on it and hand platform
+			// edges back to normal physics (the guard was dash-only).
+			phobj.limitx(dashtargetx);
+			finish_dash();
 		}
+		else if (phobj.hspeed == 0.0)
+		{
+			// Stopped short (wall, platform edge, ...): stay where
+			// physics left us — never snap through the obstacle.
+			finish_dash();
+		}
+	}
+
+	void Player::finish_dash()
+	{
+		dashing = false;
+		phobj.clear_flag(PhysicsObject::Flag::TURNATEDGES);
 	}
 
 	void Player::teleport(int16_t x, int16_t y)
 	{
 		set_position(x, y);
+
+		// A blink interrupts any dash in flight.
+		finish_dash();
 
 		// Kill momentum/forces so the next physics step re-evaluates the landing
 		// from a standstill (prevents the pre-blink velocity carrying through),
@@ -601,6 +649,10 @@ namespace ms
 
 		if (knockback && randomizer.above(stats.get_stance()))
 		{
+			// Knockback steals the horizontal speed, so any dash in
+			// flight is over — clear it before overwriting hspeed.
+			finish_dash();
+
 			phobj.hspeed = fromleft ? -1.5 : 1.5;
 			phobj.vforce -= 3.5;
 		}
@@ -699,6 +751,9 @@ namespace ms
 
 		if (ladder)
 		{
+			// Grabbing a ladder interrupts any dash in flight.
+			finish_dash();
+
 			phobj.set_x(ldr->get_x());
 
 			phobj.hspeed = 0.0;

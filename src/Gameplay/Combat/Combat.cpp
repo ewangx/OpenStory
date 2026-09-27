@@ -328,6 +328,17 @@ namespace ms
 		}
 	}
 
+	bool Combat::is_combat_step_skill(int32_t skillid)
+	{
+		switch (skillid)
+		{
+		case SkillId::Id::COMBAT_STEP:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	void Combat::apply_use_movement(const SpecialMove& move)
 	{
 		int32_t moveid = move.get_id();
@@ -341,6 +352,12 @@ namespace ms
 		if (is_flash_jump_skill(moveid))
 		{
 			apply_flash_jump();
+			return;
+		}
+
+		if (is_combat_step_skill(moveid))
+		{
+			apply_combat_step();
 			return;
 		}
 	}
@@ -376,6 +393,23 @@ namespace ms
 
 		static Animation fj_effect(nl::nx::effect["BasicEff.img"]["Flying"]);
 		player.show_attack_effect(fj_effect, 0);
+	}
+
+	void Combat::apply_combat_step()
+	{
+		// Aran's dash works grounded as well as airborne (unlike Flash
+		// Jump), so there is no onground early-out here. Pure horizontal
+		// impulse toward the held/facing direction; the authored
+		// use-effect in Skill.wz plays via apply_useeffects, so no
+		// synthetic visual is needed.
+		const double COMBAT_STEP_HSPEED = 6.5;
+
+		bool left = player.is_key_down(KeyAction::Id::LEFT);
+		bool right = player.is_key_down(KeyAction::Id::RIGHT);
+		double dir = left ? -1.0 : (right ? 1.0 : (player.is_facing_right() ? 1.0 : -1.0));
+
+		PhysicsObject& phobj = player.get_phobj();
+		phobj.hspeed = dir * COMBAT_STEP_HSPEED;
 	}
 
 	void Combat::apply_teleport(const SpecialMove& move)
@@ -468,6 +502,10 @@ namespace ms
 		case SkillId::Id::RUSH_HERO:
 		case SkillId::Id::RUSH_PALADIN:
 		case SkillId::Id::RUSH_DK:
+		case SkillId::Id::SOUL_RUSH:
+		case SkillId::Id::ASSAULTER:
+		case SkillId::Id::ASSASSINATE:
+		case SkillId::Id::BOOMERANG_STEP:
 			apply_rush(result);
 			break;
 		default:
